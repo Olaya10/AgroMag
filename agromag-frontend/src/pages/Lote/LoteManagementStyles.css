@@ -1,0 +1,104 @@
+.finca-container {
+    padding: 20px;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.finca-header {
+    margin-bottom: 30px;
+    border-left: 5px solid #2e7d32;
+    padding-left: 15px;
+}
+
+.finca-header h2 {
+    color: #2e7d32;
+    margin: 0;
+}
+
+.finca-card {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+}
+
+.finca-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+}
+
+.finca-form input,
+.finca-form select {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.btn-finca {
+    margin-top: 20px;
+    padding: 12px 25px;
+    background: #2e7d32;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-finca:hover {
+    background: #1b5e20;
+}
+
+.finca-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.finca-table th,
+.finca-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.finca-table th {
+    background: #f8f9fa;
+    color: #666;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+/* Píldoras de estado según etapa (RF14) */
+.status-pill {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.siembra {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.vegetativa {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.floracion {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.cosecha {
+    background: #fce4ec;
+    color: #c2185b;
+}

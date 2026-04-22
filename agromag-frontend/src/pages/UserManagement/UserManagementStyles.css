@@ -1,0 +1,77 @@
+.admin-container {
+    padding: 40px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.header-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #2e7d32;
+    margin-bottom: 30px;
+}
+
+.form-section {
+    background: #f1f8e9;
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 40px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.user-table th,
+.user-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.badge-admin {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.badge-productor {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.badge-operario {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.btn-edit {
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.btn-delete {
+    background: #ff5252;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    margin-left: 5px;
+}
