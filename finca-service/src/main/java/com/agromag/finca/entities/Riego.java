@@ -17,7 +17,6 @@ public class Riego {
     private Double cantidadAguaLitros;
     private String observaciones;
 
-    // Relación con el lote (RF08: "incluyendo cultivo asociado")
     @ManyToOne
     @JoinColumn(name = "lote_id")
     private Lote lote;

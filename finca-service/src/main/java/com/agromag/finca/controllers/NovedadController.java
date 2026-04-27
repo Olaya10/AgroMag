@@ -1,9 +1,9 @@
 package com.agromag.finca.controllers;
 
 import com.agromag.finca.entities.Novedad;
-import com.agromag.finca.repositories.NovedadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import com.agromag.finca.services.NovedadService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,16 +13,16 @@ import java.util.List;
 public class NovedadController {
 
     @Autowired
-    private NovedadRepository novedadRepository;
+    private NovedadService novedadService;
 
     @PostMapping
     public Novedad registrar(@RequestBody Novedad novedad) {
         novedad.setFecha(LocalDateTime.now());
-        return novedadRepository.save(novedad);
+        return novedadService.guardar(novedad);
     }
 
     @GetMapping("/lote/{loteId}")
     public List<Novedad> listarPorLote(@PathVariable Long loteId) {
-        return novedadRepository.findByLoteId(loteId);
+        return novedadService.listarPorLote(loteId);
     }
 }

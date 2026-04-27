@@ -1,9 +1,10 @@
 package com.agromag.finca.controllers;
 
 import com.agromag.finca.entities.Riego;
-import com.agromag.finca.repositories.RiegoRepository;
+import com.agromag.finca.services.RiegoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -12,29 +13,36 @@ import java.util.List;
 public class RiegoController {
 
     @Autowired
-    private RiegoRepository riegoRepository;
+    private RiegoService riegoService;
 
     @PostMapping
     public Riego registrarRiego(@RequestBody Riego riego) {
-        return riegoRepository.save(riego);
+        return riegoService.registrar(riego);
     }
 
     @GetMapping
     public List<Riego> listarHistorial() {
-        return riegoRepository.findAll();
+        return riegoService.listarPorLote(null);
     }
 
     @PutMapping("/{id}")
     public Riego actualizarRiego(@PathVariable Long id, @RequestBody Riego riegoDetalles) {
-        Riego riego = riegoRepository.findById(id).orElseThrow();
+        Riego riego = riegoService.buscarPorId(id); 
+        
         riego.setCantidadAguaLitros(riegoDetalles.getCantidadAguaLitros());
         riego.setFechaHora(riegoDetalles.getFechaHora());
         riego.setObservaciones(riegoDetalles.getObservaciones());
-        return riegoRepository.save(riego);
+        
+        return riegoService.registrar(riego);
+    }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminarRiego(@PathVariable Long id) {
+        try {
+            riegoService.eliminarRiego(id);
+            return ResponseEntity.ok("Riego eliminado correctamente");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error al eliminar el riego: " + e.getMessage());
+        }
     }
 
-    @DeleteMapping("/{id}")
-    public void eliminarRiego(@PathVariable Long id) {
-        riegoRepository.deleteById(id);
-    }
 }

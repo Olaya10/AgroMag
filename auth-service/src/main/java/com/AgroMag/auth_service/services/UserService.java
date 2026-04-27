@@ -38,6 +38,8 @@ public class UserService {
         return new UserDTO(
                 savedUser.getId(),
                 savedUser.getName(),
+                savedUser.getCedula(),
+                savedUser.getEdad(),
                 savedUser.getEmail(),
                 savedUser.getRole());
     }
@@ -46,17 +48,11 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new Exception("Usuario no encontrado"));
 
-        if (passwordEncoder.matches(rawPassword, user.getPassword())) {
-            return user;
+        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
+            throw new Exception("Contraseña incorrecta");
         }
 
-        if (user.getPassword().equals(rawPassword)) {
-            user.setPassword(passwordEncoder.encode(rawPassword));
-            userRepository.save(user);
-            return user;
-        }
-
-        throw new Exception("Contraseña incorrecta");
+        return user;
     }
 
     public List<UserDTO> listarTodos() {
@@ -64,8 +60,68 @@ public class UserService {
                 .map(user -> new UserDTO(
                         user.getId(),
                         user.getName(),
+                        user.getCedula(),
+                        user.getEdad(),
                         user.getEmail(),
                         user.getRole()))
                 .collect(Collectors.toList());
+    }
+
+    public UserDTO updateUser(Long id, User userDetails) throws Exception {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new Exception("Usuario no encontrado"));
+
+        user.setName(userDetails.getName());
+        user.setEmail(userDetails.getEmail());
+        user.setRole(userDetails.getRole() != null ? userDetails.getRole().toUpperCase() : user.getRole());
+
+        // Solo actualizamos la contraseña si el usuario envió una nueva
+        if (userDetails.getPassword() != null && !userDetails.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(userDetails.getPassword()));
+        }
+
+        User updatedUser = userRepository.save(user);
+        return new UserDTO(
+                updatedUser.getId(),
+                updatedUser.getName(),
+                updatedUser.getCedula(),
+                updatedUser.getEdad(),
+                updatedUser.getEmail(),
+                updatedUser.getRole());
+    }
+
+    public void deleteUser(Long id) throws Exception {
+        if (!userRepository.existsById(id)) {
+            throw new Exception("El usuario no existe");
+        }
+        userRepository.deleteById(id);
+    }
+
+    public List<UserDTO> buscarUsuarios(String criterio) {
+        try {
+            Integer cedula = Integer.valueOf(criterio);
+            return userRepository.findByNameContainingIgnoreCaseOrCedulaContainingIgnoreCase(criterio, cedula)
+                    .stream()
+                    .map(user -> new UserDTO(
+                            user.getId(),
+                            user.getName(),
+                            user.getCedula(),
+                            user.getEdad(),
+                            user.getEmail(),
+                            user.getRole()))
+                    .collect(Collectors.toList());
+        } catch (NumberFormatException e) {
+            // Si no es un número, buscamos solo por nombre
+            return userRepository.findByNameContainingIgnoreCaseOrCedulaContainingIgnoreCase(criterio, 0)
+                    .stream()
+                    .map(user -> new UserDTO(
+                            user.getId(),
+                            user.getName(),
+                            user.getCedula(),
+                            user.getEdad(),
+                            user.getEmail(),
+                            user.getRole()))
+                    .collect(Collectors.toList());
+        }
     }
 }

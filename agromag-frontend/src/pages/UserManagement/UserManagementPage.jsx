@@ -4,10 +4,12 @@ import './UserManagementStyles.css';
 
 const UserManagementPage = () => {
     const [users, setUsers] = useState([]);
-    const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'OPERARIO' });
+    const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'OPERARIO', cedula: '', edad: '' });
     const [editingId, setEditingId] = useState(null);
-    const [loading, setLoading] = useState(false); // Estado para evitar doble click
-    const API_URL = 'http://localhost:8080/auth';
+    const [searchTerm, setSearchTerm] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const API_URL = 'http://localhost:9000/api/auth';
 
     const fetchUsers = async () => {
         try {
@@ -18,48 +20,66 @@ const UserManagementPage = () => {
         }
     };
 
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            if (searchTerm) {
+                ejecutarBusqueda(searchTerm);
+            } else {
+                fetchUsers();
+            }
+        }, 300);
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm]);
+
+    const ejecutarBusqueda = async (criterio) => {
+        try {
+            const res = await axios.get(`${API_URL}/buscar?q=${criterio}`);
+            setUsers(res.data);
+        } catch (err) {
+            console.error("Error en la búsqueda", err);
+        }
+    };
+
     useEffect(() => { fetchUsers(); }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true); // Bloqueamos el botón
+        setLoading(true);
+        const payload = {
+            ...formData,
+            cedula: Number(formData.cedula),
+            edad: Number(formData.edad)
+        };
         try {
             if (editingId) {
-                await axios.put(`${API_URL}/update-user/${editingId}`, formData);
+                await axios.put(`${API_URL}/update-user/${editingId}`, payload);
                 alert("✅ Usuario actualizado con éxito");
             } else {
-                await axios.post(`${API_URL}/register`, formData);
+                await axios.post(`${API_URL}/register`, payload);
                 alert("✨ Nuevo integrante registrado en AgroMag");
             }
-            // Limpiar formulario y estados
             cancelEdit();
             fetchUsers();
         } catch (err) {
-            // Captura el mensaje de "Email ya existe" del backend
-            const mensajeError = err.response?.data || "❌ Error en la operación";
-            alert(mensajeError);
+            alert(err.response?.data || "❌ Error en la operación");
         } finally {
-            setLoading(false); // Desbloqueamos el botón
+            setLoading(false);
         }
     };
 
     const handleDelete = async (id) => {
-        const confirmacion = window.confirm(
-            "¡Atención! Estás a punto de eliminar a un trabajador de AgroMag.\n\nEsta acción no se puede deshacer. ¿Deseas continuar?"
-        );
-
-        if (confirmacion) {
+        if (window.confirm("¿Deseas eliminar a este trabajador?")) {
             try {
                 await axios.delete(`${API_URL}/delete-user/${id}`);
                 fetchUsers();
             } catch (err) {
-                alert("No se pudo eliminar el usuario.");
+                alert("No se pudo eliminar.");
             }
         }
     };
 
     const cancelEdit = () => {
-        setFormData({ name: '', email: '', password: '', role: 'OPERARIO' });
+        setFormData({ name: '', email: '', password: '', role: 'OPERARIO', cedula: '', edad: '' });
         setEditingId(null);
     };
 
@@ -73,6 +93,19 @@ const UserManagementPage = () => {
                         value={formData.name}
                         onChange={e => setFormData({ ...formData, name: e.target.value })}
                         required
+                    />
+                    <input
+                        type="text" placeholder="Cédula"
+                        value={formData.cedula}
+                        onChange={e => setFormData({ ...formData, cedula: e.target.value })}
+                        required
+                    />
+                    <input
+                        type="number" placeholder="Edad"
+                        value={formData.edad}
+                        onChange={e => setFormData({ ...formData, edad: e.target.value })}
+                        required
+                        min="0"
                     />
                     <input
                         type="email" placeholder="Correo electrónico"
@@ -94,10 +127,9 @@ const UserManagementPage = () => {
                     </select>
 
                     <div className="button-group">
-                        <button type="submit" className="btn-submit" disabled={loading}>
+                        <button type="submit" className={`btn-submit ${editingId ? 'btn-update' : ''}`} disabled={loading}>
                             {loading ? "Procesando..." : (editingId ? "Guardar Cambios" : "Registrar")}
                         </button>
-
                         {editingId && (
                             <button type="button" className="btn-cancel" onClick={cancelEdit}>
                                 Cancelar
@@ -107,23 +139,35 @@ const UserManagementPage = () => {
                 </form>
             </div>
 
+            <div className="search-container">
+                <input 
+                    type="text" 
+                    className="search-input"
+                    placeholder="🔍 Buscar por nombre o identificación..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+
             <table className="user-table">
                 <thead>
-                    <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Acciones</th></tr>
+                    <tr><th>Nombre</th><th>Cédula</th><th>Edad</th><th>Email</th><th>Rol</th><th>Acciones</th></tr>
                 </thead>
                 <tbody>
                     {users.map(u => (
                         <tr key={u.id}>
-                            <td>{u.name}</td>
+                            <td><b>{u.name}</b></td>
+                            <td>{u.cedula}</td>
+                            <td>{u.edad}</td>
                             <td>{u.email}</td>
                             <td><span className={`badge badge-${u.role.toLowerCase()}`}>{u.role}</span></td>
-                            <td>
+                            <td className="actions-cell">
                                 <button
                                     className="btn-edit"
                                     onClick={() => {
                                         setEditingId(u.id);
-                                        setFormData({ name: u.name, email: u.email, role: u.role, password: '' });
-                                        window.scrollTo(0, 0); // Sube al formulario automáticamente
+                                        setFormData({ name: u.name, email: u.email, role: u.role, password: '', cedula: u.cedula ?? '', edad: u.edad ?? '' });
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
                                     }}
                                 >
                                     Editar
@@ -132,6 +176,13 @@ const UserManagementPage = () => {
                             </td>
                         </tr>
                     ))}
+                    {users.length === 0 && (
+                        <tr>
+                            <td colSpan="6" className="empty-message">
+                                No se encontraron resultados para su búsqueda.
+                            </td>
+                        </tr>
+                    )}
                 </tbody>
             </table>
         </div>

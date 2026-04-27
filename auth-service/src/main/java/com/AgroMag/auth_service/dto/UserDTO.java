@@ -3,6 +3,8 @@ package com.AgroMag.auth_service.dto;
 public class UserDTO {
     private Long id;
     private String name;
+    private Integer cedula;
+    private Integer edad;
     private String email;
     private String role;
 
@@ -10,10 +12,11 @@ public class UserDTO {
     public UserDTO() {
     }
 
-    // Constructor para convertir de Entity a DTO fácilmente
-    public UserDTO(Long id, String name, String email, String role) {
+    public UserDTO(Long id, String name, Integer cedula, Integer edad, String email, String role) {
         this.id = id;
         this.name = name;
+        this.cedula = cedula;
+        this.edad = edad;
         this.email = email;
         this.role = role;
     }
@@ -33,6 +36,22 @@ public class UserDTO {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Integer getCedula() {
+        return cedula;
+    }
+
+    public void setCedula(Integer cedula) {
+        this.cedula = cedula;
+    }
+
+    public Integer getEdad() {
+        return edad;
+    }
+
+    public void setEdad(Integer edad) {
+        this.edad = edad;
     }
 
     public String getEmail() {

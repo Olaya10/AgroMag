@@ -2,6 +2,7 @@ package com.agromag.finca.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "lotes")
@@ -15,10 +16,7 @@ public class Lote {
     private String nombre;
     private String tipoCultivo;
     private Double extensionHectareas;
-
     private String coordenadas;
-
     private String etapaDesarrollo;
-
     private String observaciones;
 }

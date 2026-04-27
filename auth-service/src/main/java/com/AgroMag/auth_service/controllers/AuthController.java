@@ -3,7 +3,6 @@ package com.AgroMag.auth_service.controllers;
 import com.AgroMag.auth_service.dto.UserDTO;
 import com.AgroMag.auth_service.entities.User;
 import com.AgroMag.auth_service.services.UserService;
-import com.AgroMag.auth_service.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,9 +16,6 @@ public class AuthController {
 
     @Autowired
     private UserService userService;
-
-    @Autowired
-    private UserRepository userRepository;
 
     @PostMapping("/register")
     public ResponseEntity<?> registrar(@RequestBody User user) {
@@ -37,7 +33,14 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody User loginData) {
         try {
             User user = userService.login(loginData.getEmail(), loginData.getPassword());
-            return ResponseEntity.ok(user);
+            UserDTO userDTO = new UserDTO(
+                    user.getId(),
+                    user.getName(),
+                    user.getCedula(),
+                    user.getEdad(),
+                    user.getEmail(),
+                    user.getRole());
+            return ResponseEntity.ok(userDTO);
         } catch (Exception e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }
@@ -52,21 +55,8 @@ public class AuthController {
     @PutMapping("/update-user/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
         try {
-            User user = userRepository.findById(id)
-                    .orElseThrow(() -> new Exception("Usuario no encontrado"));
-
-            // Actualizamos todos los campos
-            user.setName(userDetails.getName());
-            user.setEmail(userDetails.getEmail());
-            user.setRole(userDetails.getRole().toUpperCase());
-
-            // Solo actualizamos la contraseña si el usuario envió una nueva
-            if (userDetails.getPassword() != null && !userDetails.getPassword().isEmpty()) {
-                user.setPassword(userDetails.getPassword());
-            }
-
-            userRepository.save(user);
-            return ResponseEntity.ok(user);
+            UserDTO updatedUser = userService.updateUser(id, userDetails);
+            return ResponseEntity.ok(updatedUser);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error al actualizar: " + e.getMessage());
         }
@@ -75,13 +65,15 @@ public class AuthController {
     @DeleteMapping("/delete-user/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         try {
-            if (!userRepository.existsById(id)) {
-                return ResponseEntity.badRequest().body("El usuario no existe");
-            }
-            userRepository.deleteById(id);
+            userService.deleteUser(id);
             return ResponseEntity.ok("Usuario eliminado correctamente");
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Error al eliminar: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Error al eliminar: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/buscar")
+    public ResponseEntity<List<UserDTO>> buscar(@RequestParam String q) {
+        return ResponseEntity.ok(userService.buscarUsuarios(q));
     }
 }
