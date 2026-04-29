@@ -75,6 +75,30 @@
     text-transform: uppercase;
 }
 
+.finca-table td button {
+    margin-right: 8px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.btn-edit {
+    background: #4caf50;
+    color: white;
+}
+
+.btn-delete {
+    background: #f44336;
+    color: white;
+}
+
+.btn-delete:hover,
+.btn-edit:hover {
+    opacity: 0.9;
+}
+
 /* Píldoras de estado según etapa (RF14) */
 .status-pill {
     padding: 4px 10px;

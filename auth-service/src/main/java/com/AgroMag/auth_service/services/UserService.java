@@ -28,6 +28,13 @@ public class UserService {
             throw new Exception("El correo electrónico ya está registrado.");
         }
 
+        // 1b. Normalizar rol y usar un valor por defecto si no se envía
+        String role = user.getRole();
+        if (role == null || role.isBlank()) {
+            role = "OPERARIO";
+        }
+        user.setRole(role.toUpperCase());
+
         // 2. Encriptar contraseña
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 

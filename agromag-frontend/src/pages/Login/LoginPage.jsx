@@ -8,7 +8,7 @@ const LoginPage = ({ onLoginSuccess }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await axios.post('http://localhost:8080/auth/login', loginData);
+            const res = await axios.post('http://localhost:9000/api/auth/login', loginData);
             onLoginSuccess(res.data);
         } catch (err) {
             alert("Error: Credenciales incorrectas");
@@ -18,10 +18,17 @@ const LoginPage = ({ onLoginSuccess }) => {
     return (
         <div className="login-container">
             <div className="login-card">
-                <h2>AgroMag Login</h2>
+                <div className="login-brand">
+                    <div className="login-logo">🌿</div>
+                    <div>
+                        <h2>AgroMag</h2>
+                        <p>Bienvenido de nuevo. Ingresa para administrar la finca.</p>
+                    </div>
+                </div>
+
                 <form className="login-form" onSubmit={handleSubmit}>
                     <input
-                        type="email" placeholder="Correo"
+                        type="email" placeholder="Correo electrónico"
                         onChange={e => setLoginData({ ...loginData, email: e.target.value })}
                         required
                     />

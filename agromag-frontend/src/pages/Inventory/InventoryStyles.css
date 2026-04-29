@@ -57,6 +57,23 @@
     background: #1b5e20;
 }
 
+.btn-secondary {
+    margin-top: 20px;
+    margin-left: 12px;
+    padding: 12px 22px;
+    border: 1px solid #2e7d32;
+    border-radius: 6px;
+    background: white;
+    color: #2e7d32;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.inventory-actions {
+    display: flex;
+    align-items: center;
+}
+
 .inventory-table {
     width: 100%;
     border-collapse: collapse;

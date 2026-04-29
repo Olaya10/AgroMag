@@ -33,4 +33,23 @@ public class InventoryController {
     public Aplicacion registrarAplicacion(@RequestBody Aplicacion aplicacion) {
         return insumoService.registrarAplicacion(aplicacion);
     }
+
+    @PutMapping("/insumos/{id}")
+    public Insumo actualizarInsumo(@PathVariable Long id, @RequestBody Insumo insumo) {
+        return insumoRepository.findById(id)
+                .map(existing -> {
+                    existing.setNombreComercial(insumo.getNombreComercial());
+                    existing.setTipo(insumo.getTipo());
+                    existing.setStockActual(insumo.getStockActual());
+                    existing.setUmbralCritico(insumo.getUmbralCritico());
+                    existing.setUnidadMedida(insumo.getUnidadMedida());
+                    return insumoRepository.save(existing);
+                })
+                .orElseThrow(() -> new RuntimeException("Insumo no encontrado"));
+    }
+
+    @DeleteMapping("/insumos/{id}")
+    public void eliminarInsumo(@PathVariable Long id) {
+        insumoRepository.deleteById(id);
+    }
 }

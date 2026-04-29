@@ -11,6 +11,7 @@ const InventoryPage = () => {
         umbralCritico: '',
         unidadMedida: 'Litros'
     });
+    const [editingId, setEditingId] = useState(null);
     const [loading, setLoading] = useState(false);
 
     // Gateway (9000) -> Inventory-Service (8082)
@@ -31,15 +32,48 @@ const InventoryPage = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            await axios.post(API_URL, formData);
-            alert("📦 Producto registrado en el inventario");
+            if (editingId) {
+                await axios.put(`${API_URL}/${editingId}`, formData);
+                alert("📦 Insumo actualizado con éxito");
+            } else {
+                await axios.post(API_URL, formData);
+                alert("📦 Producto registrado en el inventario");
+            }
             setFormData({ nombreComercial: '', tipo: 'FERTILIZANTE', stockActual: '', umbralCritico: '', unidadMedida: 'Litros' });
+            setEditingId(null);
             fetchInsumos();
         } catch (err) {
             alert("❌ Error al registrar insumo");
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleEdit = (insumo) => {
+        setEditingId(insumo.id);
+        setFormData({
+            nombreComercial: insumo.nombreComercial,
+            tipo: insumo.tipo,
+            stockActual: insumo.stockActual ?? '',
+            umbralCritico: insumo.umbralCritico ?? '',
+            unidadMedida: insumo.unidadMedida || 'Litros'
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('¿Eliminar este insumo?')) return;
+        try {
+            await axios.delete(`${API_URL}/${id}`);
+            fetchInsumos();
+        } catch (err) {
+            alert('❌ No se pudo eliminar el insumo.');
+        }
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setFormData({ nombreComercial: '', tipo: 'FERTILIZANTE', stockActual: '', umbralCritico: '', unidadMedida: 'Litros' });
     };
 
     return (
@@ -81,9 +115,16 @@ const InventoryPage = () => {
                             <option value="Gramos">Gramos</option>
                         </select>
                     </div>
-                    <button type="submit" className="btn-inventory" disabled={loading}>
-                        {loading ? 'Procesando...' : 'Añadir a Bodega'}
-                    </button>
+                    <div className="inventory-actions">
+                        <button type="submit" className="btn-inventory" disabled={loading}>
+                            {loading ? 'Procesando...' : editingId ? 'Guardar Cambios' : 'Añadir a Bodega'}
+                        </button>
+                        {editingId && (
+                            <button type="button" className="btn-secondary" onClick={cancelEdit}>
+                                Cancelar edición
+                            </button>
+                        )}
+                    </div>
                 </form>
             </div>
 
@@ -96,6 +137,7 @@ const InventoryPage = () => {
                             <th>Stock</th>
                             <th>Unidad</th>
                             <th>Estado</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -113,6 +155,10 @@ const InventoryPage = () => {
                                         <span className={`stock-badge ${critico ? 'bg-danger' : 'bg-success'}`}>
                                             {critico ? 'REABASTECER' : 'DISPONIBLE'}
                                         </span>
+                                    </td>
+                                    <td>
+                                        <button className="btn-edit" onClick={() => handleEdit(i)}>Editar</button>
+                                        <button className="btn-delete" onClick={() => handleDelete(i.id)}>Eliminar</button>
                                     </td>
                                 </tr>
                             );

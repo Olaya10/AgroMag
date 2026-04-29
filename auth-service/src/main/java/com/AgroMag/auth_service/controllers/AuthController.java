@@ -1,7 +1,9 @@
 package com.AgroMag.auth_service.controllers;
 
+import com.AgroMag.auth_service.dto.AuthenticationResponse;
 import com.AgroMag.auth_service.dto.UserDTO;
 import com.AgroMag.auth_service.entities.User;
+import com.AgroMag.auth_service.security.JwtService;
 import com.AgroMag.auth_service.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,20 +13,20 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin(origins = "http://localhost:5174", allowCredentials = "true")
 public class AuthController {
 
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private JwtService jwtService;
+
     @PostMapping("/register")
     public ResponseEntity<?> registrar(@RequestBody User user) {
         try {
-            // Llamamos al método correcto del Service
             UserDTO newUser = userService.register(user);
             return ResponseEntity.ok(newUser);
         } catch (Exception e) {
-            // Devolvemos el mensaje de error (como "Email ya existe")
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -40,7 +42,8 @@ public class AuthController {
                     user.getEdad(),
                     user.getEmail(),
                     user.getRole());
-            return ResponseEntity.ok(userDTO);
+            String token = jwtService.generateToken(user);
+            return ResponseEntity.ok(new AuthenticationResponse(token, userDTO));
         } catch (Exception e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }

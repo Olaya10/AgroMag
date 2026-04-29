@@ -11,6 +11,7 @@ const LoteManagementPage = () => {
         coordenadas: '',
         etapaDesarrollo: 'SIEMBRA'
     });
+    const [editingId, setEditingId] = useState(null);
     const [loading, setLoading] = useState(false);
 
     // Gateway (9000) -> Finca-Service (8081)
@@ -31,15 +32,48 @@ const LoteManagementPage = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            await axios.post(API_URL, formData);
-            alert("🌳 Lote registrado correctamente en AgroMag");
+            if (editingId) {
+                await axios.put(`${API_URL}/${editingId}`, formData);
+                alert("🌳 Lote actualizado correctamente");
+            } else {
+                await axios.post(API_URL, formData);
+                alert("🌳 Lote registrado correctamente en AgroMag");
+            }
             setFormData({ nombre: '', tipoCultivo: 'Mango Tomy', extensionHectareas: '', coordenadas: '', etapaDesarrollo: 'SIEMBRA' });
+            setEditingId(null);
             fetchLotes();
         } catch (err) {
             alert("❌ Error al conectar con Finca-Service");
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleEdit = (lote) => {
+        setEditingId(lote.id);
+        setFormData({
+            nombre: lote.nombre,
+            tipoCultivo: lote.tipoCultivo,
+            extensionHectareas: lote.extensionHectareas,
+            coordenadas: lote.coordenadas || '',
+            etapaDesarrollo: lote.etapaDesarrollo
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('¿Eliminar este lote?')) return;
+        try {
+            await axios.delete(`${API_URL}/${id}`);
+            fetchLotes();
+        } catch (err) {
+            alert('❌ No se pudo eliminar el lote.');
+        }
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setFormData({ nombre: '', tipoCultivo: 'Mango Tomy', extensionHectareas: '', coordenadas: '', etapaDesarrollo: 'SIEMBRA' });
     };
 
     return (
@@ -96,6 +130,7 @@ const LoteManagementPage = () => {
                             <th>Área</th>
                             <th>Estado</th>
                             <th>Ubicación</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -106,6 +141,10 @@ const LoteManagementPage = () => {
                                 <td>{l.extensionHectareas} Ha</td>
                                 <td><span className={`status-pill ${l.etapaDesarrollo.toLowerCase()}`}>{l.etapaDesarrollo}</span></td>
                                 <td>{l.coordenadas || 'No asignada'}</td>
+                                <td>
+                                    <button className="btn-edit" onClick={() => handleEdit(l)}>Editar</button>
+                                    <button className="btn-delete" onClick={() => handleDelete(l.id)}>Eliminar</button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>

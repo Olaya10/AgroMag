@@ -1,97 +1,149 @@
 import { useState } from 'react';
+import axios from 'axios';
+import './App.css';
 import LoginPage from './pages/Login/LoginPage';
 import UserManagementPage from './pages/UserManagement/UserManagementPage';
 import LoteManagementPage from './pages/Lote/LoteManagementPage';
 import InventoryPage from './pages/Inventory/InventoryPage';
+import OperationsPage from './pages/Operations/OperationsPage';
+
+const sidebarItems = [
+  { key: 'usuarios', label: 'Usuarios', roles: ['ADMIN'] },
+  { key: 'lotes', label: 'Lotes', roles: ['ADMIN', 'PRODUCTOR'] },
+  { key: 'insumos', label: 'Insumos', roles: ['ADMIN', 'PRODUCTOR'] },
+  { key: 'operaciones', label: 'Operaciones', roles: ['ADMIN', 'PRODUCTOR', 'OPERARIO'] }
+];
 
 function App() {
   const [currentUser, setCurrentUser] = useState(() => {
-    const savedUser = localStorage.getItem('agroMagUser');
-    return savedUser ? JSON.parse(savedUser) : null;
+    try {
+      const savedUser = localStorage.getItem('agroMagUser');
+      if (!savedUser) return null;
+      const parsedUser = JSON.parse(savedUser);
+      if (parsedUser?.role) {
+        parsedUser.role = parsedUser.role.toUpperCase();
+      }
+      if (parsedUser?.token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${parsedUser.token}`;
+      }
+      return parsedUser;
+    } catch (error) {
+      console.warn('Usuario guardado en localStorage inválido:', error);
+      localStorage.removeItem('agroMagUser');
+      return null;
+    }
   });
 
-  // Estado para controlar qué sección ve el Productor/Operario
-  const [view, setView] = useState('lotes');
+  const defaultView = currentUser?.role === 'OPERARIO'
+    ? 'operaciones'
+    : currentUser?.role === 'ADMIN'
+      ? 'usuarios'
+      : 'lotes';
+
+  const [view, setView] = useState(defaultView || 'lotes');
+
+  const setAuthToken = (token) => {
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      delete axios.defaults.headers.common['Authorization'];
+    }
+  };
 
   const handleLoginSuccess = (user) => {
-    setCurrentUser(user);
-    localStorage.setItem('agroMagUser', JSON.stringify(user));
+    const normalizedUser = {
+      ...user,
+      role: user?.role ? user.role.toUpperCase() : 'OPERARIO',
+    };
+    setCurrentUser(normalizedUser);
+    localStorage.setItem('agroMagUser', JSON.stringify(normalizedUser));
+    setAuthToken(normalizedUser.token);
+    setView(normalizedUser.role === 'OPERARIO' ? 'operaciones' : normalizedUser.role === 'ADMIN' ? 'usuarios' : 'lotes');
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
     setView('lotes');
     localStorage.removeItem('agroMagUser');
+    setAuthToken(null);
   };
 
   if (!currentUser) {
     return <LoginPage onLoginSuccess={handleLoginSuccess} />;
   }
 
+  const allowedSidebar = sidebarItems.filter(item => item.roles.includes(currentUser.role));
+
+  const renderSection = () => {
+    switch (view) {
+      case 'usuarios':
+        return <UserManagementPage />;
+      case 'lotes':
+        return <LoteManagementPage />;
+      case 'insumos':
+        return <InventoryPage />;
+      case 'operaciones':
+        return <OperationsPage currentUser={currentUser} />;
+      default:
+        return <div className="empty-view">Selecciona una sección del menú.</div>;
+    }
+  };
+
   return (
-    <div>
-      {/* Navbar Principal */}
-      <nav style={{ padding: '15px 40px', background: '#2e7d32', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
-        <h2 style={{ margin: 0, letterSpacing: '1px' }}>🌿 AgroMag</h2>
-
-        {/* Menú de navegación para Productor y Operario */}
-        {currentUser.role !== 'ADMIN' && (
-          <div style={{ display: 'flex', gap: '20px' }}>
-            <button
-              onClick={() => setView('lotes')}
-              style={navButtonStyle(view === 'lotes')}>
-              Finca y Lotes
-            </button>
-            <button
-              onClick={() => setView('inventario')}
-              style={navButtonStyle(view === 'inventario')}>
-              Bodega (Insumos)
-            </button>
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div className="sidebar-brand">
+          <div className="brand-icon">🌿</div>
+          <div>
+            <h1>AgroMag</h1>
+            <p>Gestión agrícola</p>
           </div>
-        )}
-
-        <div>
-          <span style={{ marginRight: '20px' }}>
-            Bienvenido, <b>{currentUser.name}</b> <small>({currentUser.role})</small>
-          </span>
-          <button onClick={handleLogout} style={{ background: '#f1f8e9', color: '#2e7d32', border: 'none', borderRadius: '4px', padding: '7px 15px', cursor: 'pointer', fontWeight: 'bold' }}>
-            Cerrar Sesión
-          </button>
         </div>
-      </nav>
 
-      {/* Contenido Dinámico */}
-      <div style={{ padding: '20px' }}>
+        <div className="sidebar-section">
+          <p className="sidebar-label">Secciones</p>
+          {allowedSidebar.map(item => (
+            <button
+              key={item.key}
+              className={`sidebar-item ${view === item.key ? 'active' : ''}`}
+              onClick={() => setView(item.key)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
 
-        {/* ROL ADMIN: Solo gestión de usuarios */}
-        {currentUser.role === 'ADMIN' && <UserManagementPage />}
+        <div className="sidebar-footer">
+          <span className="sidebar-footer-title">Conectado como</span>
+          <strong>{currentUser.name}</strong>
+          <span className="sidebar-footer-role">{currentUser.role}</span>
+        </div>
+      </aside>
 
-        {/* OTROS ROLES: Navegación por pestañas */}
-        {currentUser.role !== 'ADMIN' && (
-          <>
-            {view === 'lotes' ? (
-              <LoteManagementPage />
-            ) : (
-              <InventoryPage />
-            )}
-          </>
-        )}
+      <main className="main-content">
+        <header className="topbar">
+          <div>
+            <p className="eyebrow">Panel AgroMag</p>
+            <h2>Hola, {currentUser.name}</h2>
+          </div>
+          <div className="topbar-actions">
+            <div className="profile-card">
+              <div className="avatar">{currentUser.name.split(' ').map((word) => word[0]).join('').slice(0, 2)}</div>
+              <div>
+                <span>{currentUser.name}</span>
+                <small>{currentUser.role}</small>
+              </div>
+            </div>
+            <button className="logout-button" onClick={handleLogout}>Cerrar Sesión</button>
+          </div>
+        </header>
 
-      </div>
+        <section className="content-area">
+          {renderSection()}
+        </section>
+      </main>
     </div>
   );
 }
-
-// Estilo auxiliar para los botones del menú
-const navButtonStyle = (isActive) => ({
-  background: isActive ? '#1b5e20' : 'transparent',
-  color: 'white',
-  border: '1px solid white',
-  borderRadius: '4px',
-  padding: '8px 15px',
-  cursor: 'pointer',
-  fontWeight: isActive ? 'bold' : 'normal',
-  transition: '0.3s'
-});
 
 export default App;
