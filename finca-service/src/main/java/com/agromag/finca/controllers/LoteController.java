@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/lotes")
+@CrossOrigin(origins = "*", maxAge = 3600)
 public class LoteController {
 
     @Autowired
@@ -21,8 +22,12 @@ public class LoteController {
     }
 
     @PostMapping
-    public Lote guardar(@RequestBody Lote lote) {
-        return loteService.guardar(lote);
+    public ResponseEntity<?> guardar(@RequestBody Lote lote) {
+        try {
+            return ResponseEntity.ok(loteService.guardar(lote));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PatchMapping("/{id}/etapa")

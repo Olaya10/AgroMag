@@ -2,16 +2,20 @@ import { useState } from 'react';
 import axios from 'axios';
 import './LoginStyles.css';
 
-const LoginPage = ({ onLoginSuccess }) => {
+const LoginPage = ({ onLoginSuccess, onBack }) => {
     const [loginData, setLoginData] = useState({ email: '', password: '' });
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
         try {
             const res = await axios.post('http://localhost:9000/api/auth/login', loginData);
             onLoginSuccess(res.data);
         } catch (err) {
             alert("Error: Credenciales incorrectas");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -29,16 +33,25 @@ const LoginPage = ({ onLoginSuccess }) => {
                 <form className="login-form" onSubmit={handleSubmit}>
                     <input
                         type="email" placeholder="Correo electrónico"
+                        value={loginData.email}
                         onChange={e => setLoginData({ ...loginData, email: e.target.value })}
                         required
                     />
                     <input
                         type="password" placeholder="Contraseña"
+                        value={loginData.password}
                         onChange={e => setLoginData({ ...loginData, password: e.target.value })}
                         required
                     />
-                    <button type="submit" className="btn-login">Entrar al Sistema</button>
+                    <button type="submit" className="btn-login" disabled={loading}>
+                        {loading ? 'Cargando...' : 'Entrar al Sistema'}
+                    </button>
                 </form>
+                {onBack && (
+                    <button type="button" className="btn-back" onClick={onBack}>
+                        Volver a la pantalla principal
+                    </button>
+                )}
             </div>
         </div>
     );

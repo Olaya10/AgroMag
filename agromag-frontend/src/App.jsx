@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import axios from 'axios';
 import './App.css';
+import HomePage from './pages/Home/HomePage';
 import LoginPage from './pages/Login/LoginPage';
 import UserManagementPage from './pages/UserManagement/UserManagementPage';
-import LoteManagementPage from './pages/Lote/LoteManagementPage';
+import FincaManagementPage from './pages/Finca/FincaManagementPage';
 import InventoryPage from './pages/Inventory/InventoryPage';
 import OperationsPage from './pages/Operations/OperationsPage';
 
 const sidebarItems = [
   { key: 'usuarios', label: 'Usuarios', roles: ['ADMIN'] },
-  { key: 'lotes', label: 'Lotes', roles: ['ADMIN', 'PRODUCTOR'] },
+  { key: 'finca', label: 'Gestión de Finca', roles: ['ADMIN', 'PRODUCTOR'] },
   { key: 'insumos', label: 'Insumos', roles: ['ADMIN', 'PRODUCTOR'] },
   { key: 'operaciones', label: 'Operaciones', roles: ['ADMIN', 'PRODUCTOR', 'OPERARIO'] }
 ];
@@ -38,9 +39,10 @@ function App() {
     ? 'operaciones'
     : currentUser?.role === 'ADMIN'
       ? 'usuarios'
-      : 'lotes';
+      : 'finca';
 
-  const [view, setView] = useState(defaultView || 'lotes');
+  const [view, setView] = useState(defaultView || 'finca');
+  const [showLogin, setShowLogin] = useState(false);
 
   const setAuthToken = (token) => {
     if (token) {
@@ -58,18 +60,27 @@ function App() {
     setCurrentUser(normalizedUser);
     localStorage.setItem('agroMagUser', JSON.stringify(normalizedUser));
     setAuthToken(normalizedUser.token);
-    setView(normalizedUser.role === 'OPERARIO' ? 'operaciones' : normalizedUser.role === 'ADMIN' ? 'usuarios' : 'lotes');
+    setView(normalizedUser.role === 'OPERARIO' ? 'operaciones' : normalizedUser.role === 'ADMIN' ? 'usuarios' : 'finca');
+  };
+
+  const handleStartLogin = () => {
+    setShowLogin(true);
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
-    setView('lotes');
+    setView('finca');
+    setShowLogin(false);
     localStorage.removeItem('agroMagUser');
     setAuthToken(null);
   };
 
   if (!currentUser) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    return showLogin ? (
+      <LoginPage onLoginSuccess={handleLoginSuccess} onBack={() => setShowLogin(false)} />
+    ) : (
+      <HomePage onStartLogin={handleStartLogin} />
+    );
   }
 
   const allowedSidebar = sidebarItems.filter(item => item.roles.includes(currentUser.role));
@@ -78,8 +89,8 @@ function App() {
     switch (view) {
       case 'usuarios':
         return <UserManagementPage />;
-      case 'lotes':
-        return <LoteManagementPage />;
+      case 'finca':
+        return <FincaManagementPage />;
       case 'insumos':
         return <InventoryPage />;
       case 'operaciones':

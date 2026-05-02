@@ -7,30 +7,27 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "lotes")
+@Table(name = "cultivos")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Lote {
+public class Cultivo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String nombre;
-    private Double extensionHectareas;
-    private String coordenadas;
-    private String etapaDesarrollo;
-    private String observaciones;
+    private String descripcion;
+    private Integer diasCosecha;
+    private String temperapturOptima;
+    private String humidadOptima;
     
     @Lob
     @Column(columnDefinition = "LONGTEXT")
     private String imagen; // Almacenar imagen en base64
     
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "cultivo_id", nullable = false)
-    private Cultivo cultivo;
-    
+    private Boolean activo = true;
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;
     
