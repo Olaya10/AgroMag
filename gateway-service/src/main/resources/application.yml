@@ -4,8 +4,6 @@ server:
 spring:
   application:
     name: gateway-service
-  cloud:
-    gateway:
-      discovery:
-        locator:
-          enabled: true
+
+# El gateway utiliza rutas estáticas definidas en GatewayServiceApplication.
+# No hay cliente de descubrimiento configurado en este microservicio.

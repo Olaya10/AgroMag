@@ -21,13 +21,13 @@ public class GatewayServiceApplication {
 	public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
 		return builder.routes()
 				.route("auth-service", r -> r.path("/api/auth/**")
-						.filters(f -> f.stripPrefix(2))
+						.filters(f -> f.stripPrefix(1))
 						.uri("http://localhost:8080"))
 				.route("finca-service", r -> r.path("/api/finca/**")
-						.filters(f -> f.stripPrefix(2))
+						.filters(f -> f.stripPrefix(1))
 						.uri("http://localhost:8081"))
 				.route("inventory-service", r -> r.path("/api/inventory/**")
-						.filters(f -> f.stripPrefix(2))
+						.filters(f -> f.stripPrefix(1))
 						.uri("http://localhost:8082"))
 				.build();
 	}
