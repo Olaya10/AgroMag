@@ -34,6 +34,11 @@ public class InventoryController {
         return insumoService.registrarAplicacion(aplicacion);
     }
 
+    @GetMapping("/aplicaciones")
+    public List<Aplicacion> listarAplicaciones() {
+        return insumoService.listarAplicaciones();
+    }
+
     @PutMapping("/insumos/{id}")
     public Insumo actualizarInsumo(@PathVariable Long id, @RequestBody Insumo insumo) {
         return insumoRepository.findById(id)

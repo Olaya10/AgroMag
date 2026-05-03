@@ -7,12 +7,14 @@ import UserManagementPage from './pages/UserManagement/UserManagementPage';
 import FincaManagementPage from './pages/Finca/FincaManagementPage';
 import InventoryPage from './pages/Inventory/InventoryPage';
 import OperationsPage from './pages/Operations/OperationsPage';
+import ReportsPage from './pages/Reports/ReportsPage';
 
 const sidebarItems = [
   { key: 'usuarios', label: 'Usuarios', roles: ['ADMIN'] },
   { key: 'finca', label: 'Gestión de Finca', roles: ['ADMIN', 'PRODUCTOR'] },
   { key: 'insumos', label: 'Insumos', roles: ['ADMIN', 'PRODUCTOR'] },
-  { key: 'operaciones', label: 'Operaciones', roles: ['ADMIN', 'PRODUCTOR', 'OPERARIO'] }
+  { key: 'operaciones', label: 'Operaciones', roles: ['ADMIN', 'PRODUCTOR', 'OPERARIO'] },
+  { key: 'reportes', label: 'Reportes', roles: ['ADMIN', 'PRODUCTOR'] }
 ];
 
 function App() {
@@ -95,6 +97,8 @@ function App() {
         return <InventoryPage />;
       case 'operaciones':
         return <OperationsPage currentUser={currentUser} />;
+      case 'reportes':
+        return <ReportsPage />;
       default:
         return <div className="empty-view">Selecciona una sección del menú.</div>;
     }

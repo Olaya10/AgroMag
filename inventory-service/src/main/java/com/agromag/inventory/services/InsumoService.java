@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class InsumoService {
@@ -33,8 +34,12 @@ public class InsumoService {
         insumo.setStockActual(insumo.getStockActual() - aplicacion.getDosis());
         insumoRepository.save(insumo);
 
-        // 3. Guardar el registro de la aplicación (RF17)
+        // 3. Guardar el registro de la aplicación
         aplicacion.setFecha(LocalDateTime.now());
         return aplicacionRepository.save(aplicacion);
+    }
+
+    public List<Aplicacion> listarAplicaciones() {
+        return aplicacionRepository.findAll();
     }
 }
