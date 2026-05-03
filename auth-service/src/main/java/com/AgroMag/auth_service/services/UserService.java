@@ -105,30 +105,15 @@ public class UserService {
     }
 
     public List<UserDTO> buscarUsuarios(String criterio) {
-        try {
-            Integer cedula = Integer.valueOf(criterio);
-            return userRepository.findByNameContainingIgnoreCaseOrCedulaContainingIgnoreCase(criterio, cedula)
-                    .stream()
-                    .map(user -> new UserDTO(
-                            user.getId(),
-                            user.getName(),
-                            user.getCedula(),
-                            user.getEdad(),
-                            user.getEmail(),
-                            user.getRole()))
-                    .collect(Collectors.toList());
-        } catch (NumberFormatException e) {
-            // Si no es un número, buscamos solo por nombre
-            return userRepository.findByNameContainingIgnoreCaseOrCedulaContainingIgnoreCase(criterio, 0)
-                    .stream()
-                    .map(user -> new UserDTO(
-                            user.getId(),
-                            user.getName(),
-                            user.getCedula(),
-                            user.getEdad(),
-                            user.getEmail(),
-                            user.getRole()))
-                    .collect(Collectors.toList());
-        }
+        return userRepository.buscarUsuarios(criterio)
+                .stream()
+                .map(user -> new UserDTO(
+                        user.getId(),
+                        user.getName(),
+                        user.getCedula(),
+                        user.getEdad(),
+                        user.getEmail(),
+                        user.getRole()))
+                .collect(Collectors.toList());
     }
 }

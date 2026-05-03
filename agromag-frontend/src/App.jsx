@@ -108,11 +108,7 @@ function App() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="brand-icon">🌿</div>
-          <div>
-            <h1>AgroMag</h1>
-            <p>Gestión agrícola</p>
-          </div>
+          <img src="/IMG_0150.PNG" alt="AgroMag Logo" className="brand-icon" />
         </div>
 
         <div className="sidebar-section">
