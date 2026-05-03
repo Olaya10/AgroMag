@@ -10,7 +10,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/cultivos")
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class CultivoController {
 
     @Autowired

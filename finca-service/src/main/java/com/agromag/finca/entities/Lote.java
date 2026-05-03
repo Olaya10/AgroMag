@@ -24,7 +24,7 @@ public class Lote {
     private String observaciones;
     
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(columnDefinition = "TEXT")
     private String imagen; // Almacenar imagen en base64
     
     @ManyToOne(fetch = FetchType.EAGER)

@@ -5,6 +5,7 @@ import com.agromag.finca.repositories.CultivoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CultivoService {
@@ -12,10 +13,12 @@ public class CultivoService {
     @Autowired
     private CultivoRepository cultivoRepository;
 
+    @Transactional(readOnly = true)
     public List<Cultivo> listarActivos() {
         return cultivoRepository.findByActivoTrue();
     }
 
+    @Transactional(readOnly = true)
     public List<Cultivo> listarTodos() {
         return cultivoRepository.findAll();
     }
@@ -69,4 +72,6 @@ public class CultivoService {
         cultivo.setActivo(false);
         cultivoRepository.save(cultivo);
     }
+
+    
 }

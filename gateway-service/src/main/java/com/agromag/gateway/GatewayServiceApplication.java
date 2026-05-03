@@ -24,10 +24,10 @@ public class GatewayServiceApplication {
 						.filters(f -> f.stripPrefix(1))
 						.uri("http://localhost:8080"))
 				.route("finca-service", r -> r.path("/api/finca/**")
-						.filters(f -> f.stripPrefix(1))
+						.filters(f -> f.stripPrefix(2))
 						.uri("http://localhost:8081"))
 				.route("inventory-service", r -> r.path("/api/inventory/**")
-						.filters(f -> f.stripPrefix(1))
+						.filters(f -> f.stripPrefix(2))
 						.uri("http://localhost:8082"))
 				.build();
 	}
@@ -35,7 +35,7 @@ public class GatewayServiceApplication {
 	@Bean
 	public CorsWebFilter corsWebFilter() {
 		CorsConfiguration corsConfig = new CorsConfiguration();
-		corsConfig.setAllowedOriginPatterns(Arrays.asList("*"));
+		corsConfig.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
 		corsConfig.setMaxAge(3600L);
 		corsConfig.addAllowedMethod("*");
 		corsConfig.addAllowedHeader("*");

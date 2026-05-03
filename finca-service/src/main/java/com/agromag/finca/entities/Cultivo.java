@@ -23,8 +23,8 @@ public class Cultivo {
     private String temperapturOptima;
     private String humidadOptima;
     
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    
+    @Column(columnDefinition = "TEXT")
     private String imagen; // Almacenar imagen en base64
     
     private Boolean activo = true;
