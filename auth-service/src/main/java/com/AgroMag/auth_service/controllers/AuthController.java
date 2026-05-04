@@ -41,7 +41,8 @@ public class AuthController {
                     user.getCedula(),
                     user.getEdad(),
                     user.getEmail(),
-                    user.getRole());
+                    user.getRole(),
+                    user.getActive());
             String token = jwtService.generateToken(user);
             return ResponseEntity.ok(new AuthenticationResponse(token, userDTO));
         } catch (Exception e) {
@@ -62,6 +63,16 @@ public class AuthController {
             return ResponseEntity.ok(updatedUser);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error al actualizar: " + e.getMessage());
+        }
+    }
+
+    @PatchMapping("/users/{id}/active")
+    public ResponseEntity<?> setActive(@PathVariable Long id, @RequestBody Boolean active) {
+        try {
+            UserDTO updatedUser = userService.setActive(id, active);
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error al actualizar estado: " + e.getMessage());
         }
     }
 

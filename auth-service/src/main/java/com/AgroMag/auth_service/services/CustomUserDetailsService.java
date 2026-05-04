@@ -25,9 +25,14 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
         String role = user.getRole() != null ? user.getRole().toUpperCase() : "OPERARIO";
+        boolean enabled = user.getActive() == null ? true : user.getActive();
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
+                enabled,
+                true,
+                true,
+                true,
                 List.of(new SimpleGrantedAuthority("ROLE_" + role)));
     }
 }

@@ -7,18 +7,20 @@ public class UserDTO {
     private Integer edad;
     private String email;
     private String role;
+    private Boolean active;
 
     // Constructor vacío
     public UserDTO() {
     }
 
-    public UserDTO(Long id, String name, Integer cedula, Integer edad, String email, String role) {
+    public UserDTO(Long id, String name, Integer cedula, Integer edad, String email, String role, Boolean active) {
         this.id = id;
         this.name = name;
         this.cedula = cedula;
         this.edad = edad;
         this.email = email;
         this.role = role;
+        this.active = active;
     }
 
     // Getters y Setters
@@ -68,5 +70,13 @@ public class UserDTO {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
     }
 }

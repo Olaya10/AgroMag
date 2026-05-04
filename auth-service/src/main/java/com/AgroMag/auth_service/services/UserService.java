@@ -38,6 +38,11 @@ public class UserService {
         // 2. Encriptar contraseña
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
+        // 2b. Establecer estado activo por defecto
+        if (user.getActive() == null) {
+            user.setActive(true);
+        }
+
         // 3. Guardar en DB
         User savedUser = userRepository.save(user);
 
@@ -48,7 +53,8 @@ public class UserService {
                 savedUser.getCedula(),
                 savedUser.getEdad(),
                 savedUser.getEmail(),
-                savedUser.getRole());
+                savedUser.getRole(),
+                savedUser.getActive());
     }
 
     public User login(String email, String rawPassword) throws Exception {
@@ -57,6 +63,10 @@ public class UserService {
 
         if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
             throw new Exception("Contraseña incorrecta");
+        }
+
+        if (user.getActive() != null && !user.getActive()) {
+            throw new Exception("Cuenta inactiva. Contacta al administrador.");
         }
 
         return user;
@@ -70,7 +80,8 @@ public class UserService {
                         user.getCedula(),
                         user.getEdad(),
                         user.getEmail(),
-                        user.getRole()))
+                        user.getRole(),
+                        user.getActive()))
                 .collect(Collectors.toList());
     }
 
@@ -81,6 +92,9 @@ public class UserService {
         user.setName(userDetails.getName());
         user.setEmail(userDetails.getEmail());
         user.setRole(userDetails.getRole() != null ? userDetails.getRole().toUpperCase() : user.getRole());
+        if (userDetails.getActive() != null) {
+            user.setActive(userDetails.getActive());
+        }
 
         // Solo actualizamos la contraseña si el usuario envió una nueva
         if (userDetails.getPassword() != null && !userDetails.getPassword().isEmpty()) {
@@ -94,7 +108,8 @@ public class UserService {
                 updatedUser.getCedula(),
                 updatedUser.getEdad(),
                 updatedUser.getEmail(),
-                updatedUser.getRole());
+                updatedUser.getRole(),
+                updatedUser.getActive());
     }
 
     public void deleteUser(Long id) throws Exception {
@@ -113,7 +128,23 @@ public class UserService {
                         user.getCedula(),
                         user.getEdad(),
                         user.getEmail(),
-                        user.getRole()))
+                        user.getRole(),
+                        user.getActive()))
                 .collect(Collectors.toList());
+    }
+
+    public UserDTO setActive(Long id, Boolean active) throws Exception {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new Exception("Usuario no encontrado"));
+        user.setActive(active);
+        User updatedUser = userRepository.save(user);
+        return new UserDTO(
+                updatedUser.getId(),
+                updatedUser.getName(),
+                updatedUser.getCedula(),
+                updatedUser.getEdad(),
+                updatedUser.getEmail(),
+                updatedUser.getRole(),
+                updatedUser.getActive());
     }
 }

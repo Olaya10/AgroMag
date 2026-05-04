@@ -8,6 +8,7 @@ public class AuthenticationResponse {
     private Integer edad;
     private String email;
     private String role;
+    private Boolean active;
 
     public AuthenticationResponse() {
     }
@@ -20,6 +21,7 @@ public class AuthenticationResponse {
         this.edad = user.getEdad();
         this.email = user.getEmail();
         this.role = user.getRole();
+        this.active = user.getActive();
     }
 
     public String getToken() {
@@ -76,5 +78,13 @@ public class AuthenticationResponse {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
     }
 }

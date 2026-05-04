@@ -6,7 +6,7 @@ import { Users, Search, UserPlus, Edit3, Trash2 } from 'lucide-react';
 
 const UserManagementPage = () => {
   const [users, setUsers] = useState([]);
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'OPERARIO', cedula: '', edad: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'OPERARIO', cedula: '', edad: '', active: true });
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,7 +48,7 @@ const UserManagementPage = () => {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setFormData({ name: '', email: '', password: '', role: 'OPERARIO', cedula: '', edad: '' });
+    setFormData({ name: '', email: '', password: '', role: 'OPERARIO', cedula: '', edad: '', active: true });
   };
 
   const handleSubmit = async (e) => {
@@ -57,7 +57,8 @@ const UserManagementPage = () => {
     const payload = {
       ...formData,
       cedula: Number(formData.cedula),
-      edad: Number(formData.edad)
+      edad: Number(formData.edad),
+      active: formData.active
     };
 
     try {
@@ -84,6 +85,15 @@ const UserManagementPage = () => {
       fetchUsers();
     } catch (err) {
       alert('No se pudo eliminar.');
+    }
+  };
+
+  const handleToggleActive = async (id, active) => {
+    try {
+      await axios.patch(`${API_URL}/users/${id}/active`, active);
+      fetchUsers();
+    } catch (err) {
+      alert('No se pudo actualizar el estado del usuario.');
     }
   };
 
@@ -186,6 +196,20 @@ const UserManagementPage = () => {
                 </select>
               </label>
             </div>
+            <div className="grid gap-4 md:grid-cols-2 items-center">
+              <label className="flex items-center gap-3 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={formData.active}
+                  onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                  className="h-4 w-4 rounded border-slate-300 text-agro-emerald focus:ring-agro-emerald"
+                />
+                Cuenta activa
+              </label>
+              <div className="text-sm text-slate-500">
+                {editingId ? 'Marca para mantener la cuenta activa.' : 'Nueva cuenta creada como activa por defecto.'}
+              </div>
+            </div>
             <button type="submit" disabled={loading} className="inline-flex items-center gap-2 rounded-3xl bg-agro-emerald px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-agro-emerald/20 transition hover:bg-green-700 disabled:opacity-60">
               <UserPlus className="h-4 w-4" />
               {loading ? 'Guardando...' : editingId ? 'Actualizar usuario' : 'Registrar usuario'}
@@ -218,6 +242,7 @@ const UserManagementPage = () => {
                 <th className="px-4 py-4 font-semibold">Edad</th>
                 <th className="px-4 py-4 font-semibold">Email</th>
                 <th className="px-4 py-4 font-semibold">Rol</th>
+                <th className="px-4 py-4 font-semibold">Estado</th>
                 <th className="px-4 py-4 font-semibold">Acciones</th>
               </tr>
             </thead>
@@ -231,17 +256,37 @@ const UserManagementPage = () => {
                   <td className="px-4 py-4">
                     <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">{u.role}</span>
                   </td>
+                  <td className="px-4 py-4">
+                    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${u.active ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                      {u.active ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
                   <td className="px-4 py-4 space-x-2">
                     <button
                       type="button"
                       onClick={() => {
                         setEditingId(u.id);
-                        setFormData({ name: u.name, email: u.email, role: u.role, password: '', cedula: u.cedula ?? '', edad: u.edad ?? '' });
+                        setFormData({
+                          name: u.name,
+                          email: u.email,
+                          role: u.role,
+                          password: '',
+                          cedula: u.cedula ?? '',
+                          edad: u.edad ?? '',
+                          active: u.active ?? true
+                        });
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                       className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
                     >
                       <Edit3 className="h-3.5 w-3.5" /> Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleActive(u.id, !u.active)}
+                      className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-semibold transition ${u.active ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'}`}
+                    >
+                      {u.active ? 'Desactivar' : 'Activar'}
                     </button>
                     <button
                       type="button"
