@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import './App.css';
+import { DashboardLayout } from './componets/DashboardComponents';
 import HomePage from './pages/Home/HomePage';
 import LoginPage from './pages/Login/LoginPage';
 import UserManagementPage from './pages/UserManagement/UserManagementPage';
@@ -87,6 +87,17 @@ function App() {
 
   const allowedSidebar = sidebarItems.filter(item => item.roles.includes(currentUser.role));
 
+  const getPageTitle = () => {
+    const titles = {
+      usuarios: 'Gestión de Usuarios',
+      finca: 'Gestión de Finca',
+      insumos: 'Inventario de Insumos',
+      operaciones: 'Operaciones',
+      reportes: 'Reportes y Análisis'
+    };
+    return titles[view] || 'Panel de Control';
+  };
+
   const renderSection = () => {
     switch (view) {
       case 'usuarios':
@@ -100,60 +111,22 @@ function App() {
       case 'reportes':
         return <ReportsPage />;
       default:
-        return <div className="empty-view">Selecciona una sección del menú.</div>;
+        return <div className="text-center py-12 text-slate-500">Selecciona una sección del menú.</div>;
     }
   };
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <img src="/IMG_0150.PNG" alt="AgroMag Logo" className="brand-icon" />
-        </div>
-
-        <div className="sidebar-section">
-          <p className="sidebar-label">Secciones</p>
-          {allowedSidebar.map(item => (
-            <button
-              key={item.key}
-              className={`sidebar-item ${view === item.key ? 'active' : ''}`}
-              onClick={() => setView(item.key)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="sidebar-footer">
-          <span className="sidebar-footer-title">Conectado como</span>
-          <strong>{currentUser.name}</strong>
-          <span className="sidebar-footer-role">{currentUser.role}</span>
-        </div>
-      </aside>
-
-      <main className="main-content">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">Panel AgroMag</p>
-            <h2>Hola, {currentUser.name}</h2>
-          </div>
-          <div className="topbar-actions">
-            <div className="profile-card">
-              <div className="avatar">{currentUser.name.split(' ').map((word) => word[0]).join('').slice(0, 2)}</div>
-              <div>
-                <span>{currentUser.name}</span>
-                <small>{currentUser.role}</small>
-              </div>
-            </div>
-            <button className="logout-button" onClick={handleLogout}>Cerrar Sesión</button>
-          </div>
-        </header>
-
-        <section className="content-area">
-          {renderSection()}
-        </section>
-      </main>
-    </div>
+    <DashboardLayout
+      sidebarItems={allowedSidebar}
+      activeItem={view}
+      onSidebarItemClick={setView}
+      user={currentUser}
+      onLogout={handleLogout}
+      title={getPageTitle()}
+      subtitle={`Bienvenido, ${currentUser.name}`}
+    >
+      {renderSection()}
+    </DashboardLayout>
   );
 }
 
