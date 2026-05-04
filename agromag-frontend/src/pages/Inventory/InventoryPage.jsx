@@ -1,173 +1,246 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import './InventoryStyles.css';
+import { motion } from 'framer-motion';
+import { DashboardCard } from '../../componets/DashboardComponents';
+import { Package, AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react';
 
 const InventoryPage = () => {
-    const [insumos, setInsumos] = useState([]);
-    const [formData, setFormData] = useState({
-        nombreComercial: '',
-        tipo: 'FERTILIZANTE',
-        stockActual: '',
-        umbralCritico: '',
-        unidadMedida: 'Litros'
+  const [insumos, setInsumos] = useState([]);
+  const [formData, setFormData] = useState({
+    nombreComercial: '',
+    tipo: 'FERTILIZANTE',
+    stockActual: '',
+    umbralCritico: '',
+    unidadMedida: 'Litros'
+  });
+  const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const API_URL = 'http://localhost:9000/api/inventory/bodega/insumos';
+
+  const fetchInsumos = async () => {
+    try {
+      const res = await axios.get(API_URL);
+      setInsumos(res.data);
+    } catch (err) {
+      console.error('Error al cargar la bodega', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchInsumos();
+  }, []);
+
+  const resetForm = () => {
+    setEditingId(null);
+    setFormData({
+      nombreComercial: '',
+      tipo: 'FERTILIZANTE',
+      stockActual: '',
+      umbralCritico: '',
+      unidadMedida: 'Litros'
     });
-    const [editingId, setEditingId] = useState(null);
-    const [loading, setLoading] = useState(false);
+  };
 
-    // Gateway (9000) -> Inventory-Service (8082)
-    const API_URL = 'http://localhost:9000/api/inventory/bodega/insumos';
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      if (editingId) {
+        await axios.put(`${API_URL}/${editingId}`, formData);
+        alert('📦 Insumo actualizado con éxito');
+      } else {
+        await axios.post(API_URL, formData);
+        alert('📦 Producto registrado en el inventario');
+      }
+      resetForm();
+      fetchInsumos();
+    } catch (err) {
+      alert('❌ Error al registrar insumo');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const fetchInsumos = async () => {
-        try {
-            const res = await axios.get(API_URL);
-            setInsumos(res.data);
-        } catch (err) {
-            console.error("Error al cargar la bodega", err);
-        }
-    };
+  const handleEdit = (insumo) => {
+    setEditingId(insumo.id);
+    setFormData({
+      nombreComercial: insumo.nombreComercial,
+      tipo: insumo.tipo,
+      stockActual: insumo.stockActual ?? '',
+      umbralCritico: insumo.umbralCritico ?? '',
+      unidadMedida: insumo.unidadMedida || 'Litros'
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-    useEffect(() => { fetchInsumos(); }, []);
+  const handleDelete = async (id) => {
+    if (!window.confirm('¿Eliminar este insumo?')) return;
+    try {
+      await axios.delete(`${API_URL}/${id}`);
+      fetchInsumos();
+    } catch (err) {
+      alert('❌ No se pudo eliminar el insumo.');
+    }
+  };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            if (editingId) {
-                await axios.put(`${API_URL}/${editingId}`, formData);
-                alert("📦 Insumo actualizado con éxito");
-            } else {
-                await axios.post(API_URL, formData);
-                alert("📦 Producto registrado en el inventario");
-            }
-            setFormData({ nombreComercial: '', tipo: 'FERTILIZANTE', stockActual: '', umbralCritico: '', unidadMedida: 'Litros' });
-            setEditingId(null);
-            fetchInsumos();
-        } catch (err) {
-            alert("❌ Error al registrar insumo");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleEdit = (insumo) => {
-        setEditingId(insumo.id);
-        setFormData({
-            nombreComercial: insumo.nombreComercial,
-            tipo: insumo.tipo,
-            stockActual: insumo.stockActual ?? '',
-            umbralCritico: insumo.umbralCritico ?? '',
-            unidadMedida: insumo.unidadMedida || 'Litros'
-        });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const handleDelete = async (id) => {
-        if (!window.confirm('¿Eliminar este insumo?')) return;
-        try {
-            await axios.delete(`${API_URL}/${id}`);
-            fetchInsumos();
-        } catch (err) {
-            alert('❌ No se pudo eliminar el insumo.');
-        }
-    };
-
-    const cancelEdit = () => {
-        setEditingId(null);
-        setFormData({ nombreComercial: '', tipo: 'FERTILIZANTE', stockActual: '', umbralCritico: '', unidadMedida: 'Litros' });
-    };
-
-    return (
-        <div className="inventory-container">
-            <div className="inventory-header">
-                <h2>Control de Bodega e Insumos</h2>
-                <p>Gestión de fertilizantes y químicos para AgroMag</p>
-            </div>
-
-            <div className="inventory-card">
-                <form className="inventory-form" onSubmit={handleSubmit}>
-                    <div className="inventory-grid">
-                        <input
-                            type="text" placeholder="Nombre del Producto"
-                            value={formData.nombreComercial}
-                            onChange={e => setFormData({ ...formData, nombreComercial: e.target.value })}
-                            required
-                        />
-                        <select value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })}>
-                            <option value="FERTILIZANTE">Fertilizante</option>
-                            <option value="PESTICIDA">Pesticida</option>
-                            <option value="FUNGICIDA">Fungicida</option>
-                        </select>
-                        <input
-                            type="number" placeholder="Cantidad Inicial"
-                            value={formData.stockActual}
-                            onChange={e => setFormData({ ...formData, stockActual: e.target.value })}
-                            required
-                        />
-                        <input
-                            type="number" placeholder="Umbral de Alerta"
-                            value={formData.umbralCritico}
-                            onChange={e => setFormData({ ...formData, umbralCritico: e.target.value })}
-                            required
-                        />
-                        <select value={formData.unidadMedida} onChange={e => setFormData({ ...formData, unidadMedida: e.target.value })}>
-                            <option value="Litros">Litros</option>
-                            <option value="Kilogramos">Kilogramos</option>
-                            <option value="Gramos">Gramos</option>
-                        </select>
-                    </div>
-                    <div className="inventory-actions">
-                        <button type="submit" className="btn-inventory" disabled={loading}>
-                            {loading ? 'Procesando...' : editingId ? 'Guardar Cambios' : 'Añadir a Bodega'}
-                        </button>
-                        {editingId && (
-                            <button type="button" className="btn-secondary" onClick={cancelEdit}>
-                                Cancelar edición
-                            </button>
-                        )}
-                    </div>
-                </form>
-            </div>
-
-            <div className="inventory-table-wrapper">
-                <table className="inventory-table">
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Categoría</th>
-                            <th>Stock</th>
-                            <th>Unidad</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {insumos.map(i => {
-                            const critico = i.stockActual <= i.umbralCritico;
-                            return (
-                                <tr key={i.id} className={critico ? 'row-critical' : ''}>
-                                    <td><b>{i.nombreComercial}</b></td>
-                                    <td>{i.tipo}</td>
-                                    <td className={critico ? 'text-danger' : 'text-success'}>
-                                        {i.stockActual}
-                                    </td>
-                                    <td>{i.unidadMedida}</td>
-                                    <td>
-                                        <span className={`stock-badge ${critico ? 'bg-danger' : 'bg-success'}`}>
-                                            {critico ? 'REABASTECER' : 'DISPONIBLE'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button className="btn-edit" onClick={() => handleEdit(i)}>Editar</button>
-                                        <button className="btn-delete" onClick={() => handleDelete(i.id)}>Eliminar</button>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
+  return (
+    <div className="space-y-6">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/80 backdrop-blur-xl border border-slate-200 shadow-medium rounded-3xl p-8"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.24em] text-agro-emerald font-semibold">Inventario</p>
+            <h1 className="mt-3 text-3xl font-display font-bold text-slate-900">Bodega y stock inteligente</h1>
+            <p className="mt-2 max-w-2xl text-slate-600">Gestiona inventario con alertas visuales y controles claros.</p>
+          </div>
+          <button onClick={fetchInsumos} className="inline-flex items-center gap-2 rounded-3xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-agro-emerald hover:text-agro-forest">
+            <RefreshCw className="h-4 w-4" /> Actualizar stock
+          </button>
         </div>
-    );
+      </motion.div>
+
+      <div className="grid gap-6 lg:grid-cols-[1.1fr_1.4fr]">
+        <DashboardCard
+          title={editingId ? 'Editar insumo' : 'Nuevo registro'}
+          subtitle="Mantén tus niveles de inventario bajo control"
+          action={editingId && (
+            <button onClick={resetForm} className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">Cancelar</button>
+          )}
+        >
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <label className="block text-sm text-slate-700">
+              Nombre del producto
+              <input
+                value={formData.nombreComercial}
+                onChange={(e) => setFormData({ ...formData, nombreComercial: e.target.value })}
+                required
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                placeholder="Semillas, fertilizante, pesticida"
+              />
+            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm text-slate-700">
+                Categoría
+                <select
+                  value={formData.tipo}
+                  onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                >
+                  <option value="FERTILIZANTE">Fertilizante</option>
+                  <option value="PESTICIDA">Pesticida</option>
+                  <option value="FUNGICIDA">Fungicida</option>
+                </select>
+              </label>
+              <label className="block text-sm text-slate-700">
+                Unidad de medida
+                <select
+                  value={formData.unidadMedida}
+                  onChange={(e) => setFormData({ ...formData, unidadMedida: e.target.value })}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                >
+                  <option value="Litros">Litros</option>
+                  <option value="Kilogramos">Kilogramos</option>
+                  <option value="Gramos">Gramos</option>
+                </select>
+              </label>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm text-slate-700">
+                Stock disponible
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.stockActual}
+                  onChange={(e) => setFormData({ ...formData, stockActual: e.target.value })}
+                  required
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  placeholder="0"
+                />
+              </label>
+              <label className="block text-sm text-slate-700">
+                Umbral crítico
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.umbralCritico}
+                  onChange={(e) => setFormData({ ...formData, umbralCritico: e.target.value })}
+                  required
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  placeholder="0"
+                />
+              </label>
+            </div>
+            <button type="submit" disabled={loading} className="rounded-3xl bg-agro-emerald px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-agro-emerald/20 transition hover:bg-green-700">
+              {loading ? 'Guardando...' : editingId ? 'Actualizar insumo' : 'Agregar insumo'}
+            </button>
+          </form>
+        </DashboardCard>
+
+        <DashboardCard title="Resumen rápido" subtitle="Estado actual del inventario">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+              <div className="flex items-center gap-3 text-slate-500">
+                <Package className="h-5 w-5 text-agro-emerald" />
+                <p className="text-sm font-semibold uppercase tracking-[0.24em]">Productos</p>
+              </div>
+              <p className="mt-4 text-3xl font-bold text-slate-900">{insumos.length}</p>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+              <div className="flex items-center gap-3 text-slate-500">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                <p className="text-sm font-semibold uppercase tracking-[0.24em]">Atención</p>
+              </div>
+              <p className="mt-4 text-3xl font-bold text-slate-900">{insumos.filter((i) => Number(i.stockActual) <= Number(i.umbralCritico)).length}</p>
+            </div>
+          </div>
+        </DashboardCard>
+      </div>
+
+      <DashboardCard title="Lista de insumos" subtitle="Acciones rápidas para cada elemento">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200 text-sm text-slate-700">
+            <thead className="bg-slate-100 text-slate-700">
+              <tr>
+                <th className="px-4 py-4 text-left font-semibold">Producto</th>
+                <th className="px-4 py-4 text-left font-semibold">Categoría</th>
+                <th className="px-4 py-4 text-left font-semibold">Stock</th>
+                <th className="px-4 py-4 text-left font-semibold">Umbral</th>
+                <th className="px-4 py-4 text-left font-semibold">Unidad</th>
+                <th className="px-4 py-4 text-left font-semibold">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 bg-white">
+              {insumos.map((insumo) => {
+                const critico = Number(insumo.stockActual) <= Number(insumo.umbralCritico);
+                return (
+                  <tr key={insumo.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-4 font-semibold text-slate-900">{insumo.nombreComercial}</td>
+                    <td className="px-4 py-4">{insumo.tipo}</td>
+                    <td className={`px-4 py-4 font-semibold ${critico ? 'text-rose-600' : 'text-emerald-700'}`}>{insumo.stockActual}</td>
+                    <td className="px-4 py-4">{insumo.umbralCritico}</td>
+                    <td className="px-4 py-4">{insumo.unidadMedida}</td>
+                    <td className="px-4 py-4">
+                      <button onClick={() => handleEdit(insumo)} className="mr-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200">Editar</button>
+                      <button onClick={() => handleDelete(insumo.id)} className="rounded-2xl bg-rose-100 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-200">Eliminar</button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {insumos.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="px-4 py-8 text-center text-slate-500">No hay insumos registrados.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </DashboardCard>
+    </div>
+  );
 };
 
 export default InventoryPage;

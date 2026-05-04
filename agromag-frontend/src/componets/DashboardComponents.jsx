@@ -26,6 +26,26 @@ export const DashboardSidebar = ({
 }) => {
   const [expanded, setExpanded] = React.useState(isOpen);
 
+  React.useEffect(() => {
+    setExpanded(isOpen);
+  }, [isOpen]);
+
+  const toggleSidebar = () => {
+    if (onToggle) {
+      onToggle();
+    } else {
+      setExpanded((prev) => !prev);
+    }
+  };
+
+  const closeSidebar = () => {
+    if (onToggle) {
+      onToggle();
+    } else {
+      setExpanded(false);
+    }
+  };
+
   const iconMap = {
     usuarios: Users,
     finca: Leaf,
@@ -53,7 +73,7 @@ export const DashboardSidebar = ({
               <h1 className="font-display font-bold text-lg text-agro-forest">AgroMag</h1>
             </div>
             <button
-              onClick={() => setExpanded(!expanded)}
+              onClick={closeSidebar}
               className="md:hidden p-2 hover:bg-agro-soft rounded-lg"
             >
               <X className="w-5 h-5" />
@@ -95,7 +115,7 @@ export const DashboardSidebar = ({
                 whileHover={{ x: 5 }}
                 onClick={() => {
                   onItemClick(item.key);
-                  setExpanded(false); // Cerrar en mobile
+                  closeSidebar(); // Cerrar en mobile
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden ${
                   isActive
@@ -149,7 +169,7 @@ export const DashboardSidebar = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={() => setExpanded(false)}
+          onClick={closeSidebar}
           className="fixed inset-0 bg-black/50 md:hidden z-30"
         />
       )}
@@ -159,7 +179,7 @@ export const DashboardSidebar = ({
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          onClick={() => setExpanded(true)}
+          onClick={toggleSidebar}
           className="md:hidden fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-soft hover:shadow-medium"
         >
           <Menu className="w-6 h-6 text-agro-forest" />

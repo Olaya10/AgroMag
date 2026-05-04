@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
-import './ReportsStyles.css';
+import { motion } from 'framer-motion';
+import { DashboardCard } from '../../componets/DashboardComponents';
+import { BarChart3, FileText, Download, Activity } from 'lucide-react';
 
 const ReportsPage = () => {
   const [cultivos, setCultivos] = useState([]);
@@ -35,8 +37,7 @@ const ReportsPage = () => {
 
   const formatDateTime = (dateString) => {
     if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleString();
+    return new Date(dateString).toLocaleString();
   };
 
   const downloadReport = () => {
@@ -105,85 +106,88 @@ const ReportsPage = () => {
   };
 
   return (
-    <div className="reports-container">
-      <div className="reports-header">
-        <div>
-          <p className="section-label">Reportes Profesionales</p>
-          <h2>Genera y descarga reportes completos de tus operaciones</h2>
-          <p className="section-description">
-            Descarga resúmenes en PDF de cultivos, riegos y aplicaciones de insumos.
-          </p>
+    <div className="space-y-6">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/80 backdrop-blur-xl border border-slate-200 shadow-medium rounded-3xl p-8"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.24em] text-agro-emerald font-semibold">Reportes</p>
+            <h1 className="mt-3 text-3xl font-display font-bold text-slate-900">Visión analítica de campo</h1>
+            <p className="mt-2 max-w-2xl text-slate-600">Extrae información clave de cultivos, riegos y aplicaciones para decisiones más rápidas.</p>
+          </div>
+          <button
+            onClick={downloadReport}
+            disabled={loading}
+            className="inline-flex items-center gap-2 rounded-3xl bg-agro-emerald px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-agro-emerald/20 transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Download className="h-4 w-4" />
+            {loading ? 'Generando...' : 'Exportar PDF'}
+          </button>
         </div>
-        <button className="btn-report-download" onClick={downloadReport} disabled={loading}>
-          {loading ? 'Cargando...' : 'Descargar reporte PDF'}
-        </button>
-      </div>
+      </motion.div>
 
-      <div className="reports-grid">
-        <article className="report-card highlight">
-          <span>Resumen General</span>
-          <strong>{cultivos.length + riegos.length + aplicaciones.length}</strong>
-          <p>Sumario de información registrada en tu finca.</p>
-        </article>
-        <article className="report-card">
-          <span>Cultivos</span>
-          <strong>{cultivos.length}</strong>
-          <p>Tipos de cultivo disponibles en el sistema.</p>
-        </article>
-        <article className="report-card">
-          <span>Riegos</span>
-          <strong>{riegos.length}</strong>
-          <p>Eventos de riego guardados por lote.</p>
-        </article>
-        <article className="report-card">
-          <span>Aplicaciones</span>
-          <strong>{aplicaciones.length}</strong>
-          <p>Insuficiencias de insumos procesadas.</p>
-        </article>
-      </div>
-
-      <div className="reports-details">
-        <section className="detail-panel">
-          <div className="detail-header">
-            <h3>Últimos riegos</h3>
-            <span>{Math.min(riegos.length, 5)} eventos recientes</span>
+      <div className="grid gap-6 lg:grid-cols-4">
+        <DashboardCard className="bg-gradient-to-br from-agro-emerald to-green-600 text-white shadow-lg shadow-agro-emerald/20" title="Resumen total" subtitle="Datos rápidos de tu operación">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 text-sm uppercase tracking-[0.24em] opacity-80"><BarChart3 className="h-4 w-4" /> Datos totales</div>
+            <div className="text-4xl font-bold">{cultivos.length + riegos.length + aplicaciones.length}</div>
+            <p className="text-sm leading-6 text-white/80">Total de registros generados en AgroMag.</p>
           </div>
-          <ul>
+        </DashboardCard>
+        <DashboardCard title="Cultivos" subtitle="Variedades detectadas">
+          <div className="text-3xl font-semibold text-slate-900">{cultivos.length}</div>
+        </DashboardCard>
+        <DashboardCard title="Riegos" subtitle="Eventos registrados">
+          <div className="text-3xl font-semibold text-slate-900">{riegos.length}</div>
+        </DashboardCard>
+        <DashboardCard title="Aplicaciones" subtitle="Insumos aplicados">
+          <div className="text-3xl font-semibold text-slate-900">{aplicaciones.length}</div>
+        </DashboardCard>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <DashboardCard title="Últimos riegos" subtitle="Últimos 5 eventos registrados">
+          <div className="space-y-4">
             {riegos.slice(-5).reverse().map((riego) => (
-              <li key={riego.id}>
-                <div>
-                  <strong>{riego.lote?.nombre || 'Lote no disponible'}</strong>
-                  <span>{formatDateTime(riego.fechaHora)}</span>
+              <div key={riego.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-slate-900">{riego.lote?.nombre || 'Lote desconocido'}</p>
+                    <p className="text-sm text-slate-500">{formatDateTime(riego.fechaHora)}</p>
+                  </div>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                    <Activity className="h-3.5 w-3.5" /> {riego.cantidadAguaLitros} L
+                  </span>
                 </div>
-                <div>
-                  <small>{riego.cantidadAguaLitros} L</small>
-                  <small>{riego.observaciones || 'Sin observaciones'}</small>
-                </div>
-              </li>
+                <p className="mt-3 text-sm text-slate-600">{riego.observaciones || 'Sin observaciones'}</p>
+              </div>
             ))}
-          </ul>
-        </section>
-
-        <section className="detail-panel">
-          <div className="detail-header">
-            <h3>Últimas aplicaciones</h3>
-            <span>{Math.min(aplicaciones.length, 5)} registros recientes</span>
+            {riegos.length === 0 && <p className="text-sm text-slate-500">No hay registros de riego aún.</p>}
           </div>
-          <ul>
+        </DashboardCard>
+
+        <DashboardCard title="Últimas aplicaciones" subtitle="Últimos 5 movimientos registrados">
+          <div className="space-y-4">
             {aplicaciones.slice(-5).reverse().map((app) => (
-              <li key={app.id}>
-                <div>
-                  <strong>{app.insumo?.nombreComercial || 'Insumo no disponible'}</strong>
-                  <span>{formatDateTime(app.fecha)}</span>
+              <div key={app.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-slate-900">{app.insumo?.nombreComercial || 'Insumo sin nombre'}</p>
+                    <p className="text-sm text-slate-500">{formatDateTime(app.fecha)}</p>
+                  </div>
+                  <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                    Dosis {app.dosis}
+                  </span>
                 </div>
-                <div>
-                  <small>Lote ID: {app.loteId}</small>
-                  <small>Dosis: {app.dosis}</small>
-                </div>
-              </li>
+                <p className="mt-3 text-sm text-slate-600">Lote ID: {app.loteId}</p>
+              </div>
             ))}
-          </ul>
-        </section>
+            {aplicaciones.length === 0 && <p className="text-sm text-slate-500">No hay aplicaciones registradas aún.</p>}
+          </div>
+        </DashboardCard>
       </div>
     </div>
   );

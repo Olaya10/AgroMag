@@ -1,329 +1,318 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import './LoteManagementStyles.css';
+import { motion } from 'framer-motion';
+import { DashboardCard } from '../../componets/DashboardComponents';
+import { ImagePlus, Leaf, MapPin, Sparkles } from 'lucide-react';
 
 const LoteManagementPage = () => {
-    const [lotes, setLotes] = useState([]);
-    const [cultivos, setCultivos] = useState([]);
-    const [formData, setFormData] = useState({
-        nombre: '',
-        cultivo: null,
-        extensionHectareas: '',
-        coordenadas: '',
-        etapaDesarrollo: 'SIEMBRA',
-        observaciones: '',
-        imagen: null,
-        imagenPreview: null
+  const [lotes, setLotes] = useState([]);
+  const [cultivos, setCultivos] = useState([]);
+  const [formData, setFormData] = useState({
+    nombre: '',
+    cultivo: '',
+    extensionHectareas: '',
+    coordenadas: '',
+    etapaDesarrollo: 'SIEMBRA',
+    observaciones: '',
+    imagen: null,
+    imagenPreview: null
+  });
+  const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const API_URL = 'http://localhost:9000/api/finca/lotes';
+  const CULTIVOS_URL = 'http://localhost:9000/api/finca/cultivos';
+
+  const fetchLotes = async () => {
+    try {
+      const res = await axios.get(API_URL);
+      setLotes(res.data);
+    } catch (err) {
+      console.error('Error al cargar lotes', err);
+      alert('❌ Error al cargar lotes');
+    }
+  };
+
+  const fetchCultivos = async () => {
+    try {
+      const res = await axios.get(CULTIVOS_URL);
+      setCultivos(res.data);
+    } catch (err) {
+      console.error('Error al cargar cultivos', err);
+      alert('❌ Error al cargar cultivos');
+    }
+  };
+
+  useEffect(() => {
+    fetchLotes();
+    fetchCultivos();
+  }, []);
+
+  const resetForm = () => {
+    setEditingId(null);
+    setFormData({
+      nombre: '',
+      cultivo: '',
+      extensionHectareas: '',
+      coordenadas: '',
+      etapaDesarrollo: 'SIEMBRA',
+      observaciones: '',
+      imagen: null,
+      imagenPreview: null
     });
-    const [editingId, setEditingId] = useState(null);
-    const [loading, setLoading] = useState(false);
+  };
 
-    const API_URL = 'http://localhost:9000/api/finca/lotes';
-    const CULTIVOS_URL = 'http://localhost:9000/api/finca/cultivos';
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({
+          ...prev,
+          imagen: reader.result,
+          imagenPreview: reader.result
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
-    const fetchLotes = async () => {
-        try {
-            const res = await axios.get(API_URL);
-            setLotes(res.data);
-        } catch (err) {
-            console.error("Error al cargar lotes", err);
-            alert("❌ Error al cargar lotes");
-        }
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    const fetchCultivos = async () => {
-        try {
-            const res = await axios.get(CULTIVOS_URL);
-            setCultivos(res.data);
-        } catch (err) {
-            console.error("Error al cargar cultivos", err);
-            alert("❌ Error al cargar cultivos");
-        }
-    };
+    if (!formData.nombre.trim()) {
+      alert('❌ El nombre del lote es requerido');
+      return;
+    }
 
-    useEffect(() => {
-        fetchLotes();
-        fetchCultivos();
-    }, []);
+    if (!formData.cultivo) {
+      alert('❌ Debes seleccionar un cultivo');
+      return;
+    }
 
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData({
-                    ...formData,
-                    imagen: reader.result,
-                    imagenPreview: reader.result
-                });
-            };
-            reader.readAsDataURL(file);
-        }
-    };
+    setLoading(true);
+    try {
+      const payload = {
+        nombre: formData.nombre,
+        cultivo: { id: Number(formData.cultivo) },
+        extensionHectareas: parseFloat(formData.extensionHectareas) || 0,
+        coordenadas: formData.coordenadas,
+        etapaDesarrollo: formData.etapaDesarrollo,
+        observaciones: formData.observaciones,
+        imagen: formData.imagen
+      };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        
-        if (!formData.nombre.trim()) {
-            alert("❌ El nombre del lote es requerido");
-            return;
-        }
+      if (editingId) {
+        await axios.put(`${API_URL}/${editingId}`, payload);
+        alert('🌳 Lote actualizado correctamente');
+      } else {
+        await axios.post(API_URL, payload);
+        alert('🌳 Lote registrado correctamente en AgroMag');
+      }
 
-        if (!formData.cultivo) {
-            alert("❌ Debes seleccionar un cultivo");
-            return;
-        }
+      resetForm();
+      fetchLotes();
+    } catch (err) {
+      console.error(err);
+      alert('❌ Error al guardar lote: ' + (err.response?.data || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        setLoading(true);
-        try {
-            const payload = {
-                nombre: formData.nombre,
-                cultivo: { id: formData.cultivo },
-                extensionHectareas: parseFloat(formData.extensionHectareas),
-                coordenadas: formData.coordenadas,
-                etapaDesarrollo: formData.etapaDesarrollo,
-                observaciones: formData.observaciones,
-                imagen: formData.imagen
-            };
+  const handleEdit = (lote) => {
+    setEditingId(lote.id);
+    setFormData({
+      nombre: lote.nombre,
+      cultivo: lote.cultivo?.id || '',
+      extensionHectareas: lote.extensionHectareas || '',
+      coordenadas: lote.coordenadas || '',
+      etapaDesarrollo: lote.etapaDesarrollo || 'SIEMBRA',
+      observaciones: lote.observaciones || '',
+      imagen: lote.imagen || null,
+      imagenPreview: lote.imagen || null
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-            if (editingId) {
-                await axios.put(`${API_URL}/${editingId}`, payload);
-                alert("🌳 Lote actualizado correctamente");
-            } else {
-                await axios.post(API_URL, payload);
-                alert("🌳 Lote registrado correctamente en AgroMag");
-            }
-
-            resetForm();
-            fetchLotes();
-        } catch (err) {
-            console.error(err);
-            alert("❌ Error al guardar lote: " + (err.response?.data || err.message));
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleEdit = (lote) => {
-        setEditingId(lote.id);
-        setFormData({
-            nombre: lote.nombre,
-            cultivo: lote.cultivo?.id || null,
-            extensionHectareas: lote.extensionHectareas,
-            coordenadas: lote.coordenadas || '',
-            etapaDesarrollo: lote.etapaDesarrollo,
-            observaciones: lote.observaciones || '',
-            imagen: lote.imagen || null,
-            imagenPreview: lote.imagen || null
-        });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const handleDelete = async (id) => {
-        if (!window.confirm('¿Eliminar este lote?')) return;
-        try {
-            await axios.delete(`${API_URL}/${id}`);
-            alert("✅ Lote eliminado");
-            fetchLotes();
-        } catch (err) {
-            alert('❌ No se pudo eliminar el lote.');
-        }
-    };
-
-    const resetForm = () => {
-        setEditingId(null);
-        setFormData({
-            nombre: '',
-            cultivo: null,
-            extensionHectareas: '',
-            coordenadas: '',
-            etapaDesarrollo: 'SIEMBRA',
-            observaciones: '',
-            imagen: null,
-            imagenPreview: null
-        });
-    };
-
-    return (
-        <div className="lote-container">
-            <div className="lote-header">
-                <div className="header-content">
-                    <h2>🌾 Gestión de Lotes</h2>
-                    <p>Administra los lotes de tu finca y asigna cultivos</p>
-                </div>
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-[1.05fr_1.45fr]">
+        <DashboardCard
+          title={editingId ? 'Editar lote' : 'Nuevo lote'}
+          subtitle="Define los datos del lote con claridad y agrega una imagen representativa"
+          action={
+            editingId && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
+              >
+                Cancelar edición
+              </button>
+            )
+          }
+        >
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm text-slate-700">
+                Nombre del lote
+                <input
+                  value={formData.nombre}
+                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  placeholder="Ej. Lote Central"
+                  required
+                />
+              </label>
+              <label className="block text-sm text-slate-700">
+                Cultivo principal
+                <select
+                  value={formData.cultivo}
+                  onChange={(e) => setFormData({ ...formData, cultivo: e.target.value })}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  required
+                >
+                  <option value="">Selecciona un cultivo</option>
+                  {cultivos.map((cultivo) => (
+                    <option key={cultivo.id} value={cultivo.id}>{cultivo.nombre}</option>
+                  ))}
+                </select>
+              </label>
             </div>
 
-            <div className="lote-content">
-                {/* Formulario */}
-                <div className="lote-card form-card">
-                    <div className="form-header">
-                        <h3>{editingId ? '✏️ Editar Lote' : '➕ Registrar Nuevo Lote'}</h3>
-                    </div>
-
-                    <form className="lote-form" onSubmit={handleSubmit}>
-                        <div className="form-section">
-                            <label>Nombre del Lote *</label>
-                            <input
-                                type="text"
-                                placeholder="Ej: Lote Norte, Lote Sur..."
-                                value={formData.nombre}
-                                onChange={e => setFormData({ ...formData, nombre: e.target.value })}
-                                required
-                            />
-                        </div>
-
-                        <div className="form-section">
-                            <label>Cultivo a Plantar *</label>
-                            <select
-                                value={formData.cultivo || ''}
-                                onChange={e => setFormData({ ...formData, cultivo: e.target.value ? parseInt(e.target.value) : null })}
-                                required
-                            >
-                                <option value="">-- Selecciona un cultivo --</option>
-                                {cultivos.map(cultivo => (
-                                    <option key={cultivo.id} value={cultivo.id}>{cultivo.nombre}</option>
-                                ))}
-                            </select>
-                            {cultivos.length === 0 && (
-                                <small style={{color: '#ff6b6b'}}>⚠️ Debes crear cultivos primero</small>
-                            )}
-                        </div>
-
-                        <div className="form-row">
-                            <div className="form-section">
-                                <label>Extensión (Hectáreas) *</label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    placeholder="Ej: 2.5"
-                                    value={formData.extensionHectareas}
-                                    onChange={e => setFormData({ ...formData, extensionHectareas: e.target.value })}
-                                    required
-                                />
-                            </div>
-
-                            <div className="form-section">
-                                <label>Etapa de Desarrollo</label>
-                                <select
-                                    value={formData.etapaDesarrollo}
-                                    onChange={e => setFormData({ ...formData, etapaDesarrollo: e.target.value })}
-                                >
-                                    <option value="SIEMBRA">Siembra</option>
-                                    <option value="VEGETATIVA">Vegetativa</option>
-                                    <option value="FLORACION">Floración</option>
-                                    <option value="COSECHA">Cosecha</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="form-section">
-                            <label>Coordenadas GPS</label>
-                            <input
-                                type="text"
-                                placeholder="Ej: 4.5895, -74.3085"
-                                value={formData.coordenadas}
-                                onChange={e => setFormData({ ...formData, coordenadas: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="form-section">
-                            <label>Observaciones</label>
-                            <textarea
-                                placeholder="Notas adicionales del lote..."
-                                value={formData.observaciones}
-                                onChange={e => setFormData({ ...formData, observaciones: e.target.value })}
-                                rows="3"
-                            />
-                        </div>
-
-                        <div className="form-section">
-                            <label>Imagen del Lote</label>
-                            <div className="image-upload">
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageChange}
-                                    id="imagen-input"
-                                />
-                                <label htmlFor="imagen-input" className="file-label">
-                                    📷 Seleccionar imagen
-                                </label>
-                            </div>
-                            {formData.imagenPreview && (
-                                <div className="image-preview">
-                                    <img src={formData.imagenPreview} alt="Preview" />
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="form-actions">
-                            <button type="submit" className="btn-submit" disabled={loading || cultivos.length === 0}>
-                                {loading ? '⏳ Guardando...' : editingId ? '✓ Actualizar' : '✓ Registrar'}
-                            </button>
-                            {editingId && (
-                                <button type="button" className="btn-cancel" onClick={resetForm}>
-                                    Cancelar
-                                </button>
-                            )}
-                        </div>
-                    </form>
-                </div>
-
-                {/* Listado de lotes */}
-                <div className="lotes-list">
-                    <h3>📋 Lotes Registrados</h3>
-                    {lotes.length === 0 ? (
-                        <div className="empty-state">
-                            <p>😴 No hay lotes registrados aún</p>
-                            <p className="sub-text">Comienza registrando un lote en el formulario</p>
-                        </div>
-                    ) : (
-                        <div className="lotes-grid">
-                            {lotes.map(lote => (
-                                <div key={lote.id} className="lote-item">
-                                    {lote.imagen && (
-                                        <div className="lote-image">
-                                            <img src={lote.imagen} alt={lote.nombre} />
-                                        </div>
-                                    )}
-                                    <div className="lote-info">
-                                        <h4>{lote.nombre}</h4>
-                                        <div className="lote-cultivo">
-                                            🌱 <strong>{lote.cultivo?.nombre || 'Sin cultivo'}</strong>
-                                        </div>
-                                        <div className="lote-details">
-                                            <span>📏 {lote.extensionHectareas} Ha</span>
-                                            <span className={`status-badge ${lote.etapaDesarrollo.toLowerCase()}`}>
-                                                {lote.etapaDesarrollo}
-                                            </span>
-                                        </div>
-                                        {lote.coordenadas && (
-                                            <div className="lote-coords">
-                                                📍 {lote.coordenadas}
-                                            </div>
-                                        )}
-                                        {lote.observaciones && (
-                                            <div className="lote-obs">
-                                                📝 {lote.observaciones}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="lote-actions">
-                                        <button className="btn-edit" onClick={() => handleEdit(lote)}>
-                                            ✎ Editar
-                                        </button>
-                                        <button className="btn-delete" onClick={() => handleDelete(lote.id)}>
-                                            🗑️ Eliminar
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm text-slate-700">
+                Extensión (ha)
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.extensionHectareas}
+                  onChange={(e) => setFormData({ ...formData, extensionHectareas: e.target.value })}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  placeholder="0.00"
+                />
+              </label>
+              <label className="block text-sm text-slate-700">
+                Etapa de desarrollo
+                <select
+                  value={formData.etapaDesarrollo}
+                  onChange={(e) => setFormData({ ...formData, etapaDesarrollo: e.target.value })}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                >
+                  <option value="SIEMBRA">Siembra</option>
+                  <option value="CRECIMIENTO">Crecimiento</option>
+                  <option value="COSECHA">Cosecha</option>
+                </select>
+              </label>
             </div>
-        </div>
-    );
+
+            <label className="block text-sm text-slate-700">
+              Coordenadas / referencia
+              <input
+                value={formData.coordenadas}
+                onChange={(e) => setFormData({ ...formData, coordenadas: e.target.value })}
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                placeholder="Ej. 10.1234, -84.5678"
+              />
+            </label>
+
+            <label className="block text-sm text-slate-700">
+              Observaciones
+              <textarea
+                value={formData.observaciones}
+                onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+                className="mt-2 h-28 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                placeholder="Detalles del manejo o próximas actividades"
+              />
+            </label>
+
+            <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-end">
+              <label className="block text-sm text-slate-700">
+                Imagen del lote
+                <div className="mt-2 flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                  <div className="grid h-14 w-14 place-items-center rounded-2xl bg-agro-emerald/10 text-agro-emerald">
+                    <ImagePlus className="h-6 w-6" />
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="file:mr-4 file:rounded-full file:border-0 file:bg-agro-emerald file:px-4 file:py-2 file:text-sm file:text-white"
+                  />
+                </div>
+              </label>
+              <button
+                type="submit"
+                className="rounded-3xl bg-agro-emerald px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-agro-emerald/20 transition hover:bg-green-700"
+                disabled={loading}
+              >
+                {loading ? 'Guardando...' : editingId ? 'Actualizar lote' : 'Guardar lote'}
+              </button>
+            </div>
+
+            {formData.imagenPreview && (
+              <div className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
+                <img src={formData.imagenPreview} alt="Vista previa del lote" className="h-56 w-full object-cover" />
+              </div>
+            )}
+          </form>
+        </DashboardCard>
+
+        <DashboardCard
+          title="Lotes activos"
+          subtitle="Monitorea la cartera actual y accede rápido a cada lote"
+        >
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200 text-left text-sm text-slate-700">
+              <thead className="bg-slate-100 text-slate-700">
+                <tr>
+                  <th className="px-4 py-4 font-semibold">Lote</th>
+                  <th className="px-4 py-4 font-semibold">Cultivo</th>
+                  <th className="px-4 py-4 font-semibold">Etapa</th>
+                  <th className="px-4 py-4 font-semibold">Extensión</th>
+                  <th className="px-4 py-4 font-semibold">Estado</th>
+                  <th className="px-4 py-4 font-semibold">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 bg-white">
+                {lotes.map((lote) => (
+                  <tr key={lote.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-4 font-semibold text-slate-900">{lote.nombre}</td>
+                    <td className="px-4 py-4">{lote.cultivo?.nombre || 'Sin cultivo'}</td>
+                    <td className="px-4 py-4 text-slate-600">{lote.etapaDesarrollo}</td>
+                    <td className="px-4 py-4">{lote.extensionHectareas ?? '-' } ha</td>
+                    <td className="px-4 py-4">
+                      <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                        {lote.etapaDesarrollo}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(lote)}
+                        className="mr-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
+                      >
+                        Editar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {lotes.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="px-4 py-8 text-center text-slate-500">
+                      No hay lotes registrados aún.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </DashboardCard>
+      </div>
+    </div>
+  );
 };
 
 export default LoteManagementPage;
