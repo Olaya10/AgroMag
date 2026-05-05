@@ -4,6 +4,7 @@ import com.agromag.finca.entities.Finca;
 import com.agromag.finca.repositories.FincaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,14 +15,17 @@ public class FincaService {
     @Autowired
     private FincaRepository fincaRepository;
 
+    @Transactional(readOnly = true)
     public List<Finca> getAllFincas() {
         return fincaRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public List<Finca> getActiveFincas() {
         return fincaRepository.findByActivoTrue();
     }
 
+    @Transactional(readOnly = true)
     public Optional<Finca> getFincaById(Long id) {
         return fincaRepository.findById(id);
     }
