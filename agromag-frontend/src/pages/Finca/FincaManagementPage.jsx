@@ -13,6 +13,14 @@ const TABS = [
 
 const FincaManagementPage = () => {
   const [activeTab, setActiveTab] = useState('cultivos');
+  const [refreshLoteFincas, setRefreshLoteFincas] = useState(0);
+
+  const handleChangeTab = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'lotes') {
+      setRefreshLoteFincas((prev) => prev + 1);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -32,7 +40,7 @@ const FincaManagementPage = () => {
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => handleChangeTab(tab.key)}
                 className={`rounded-2xl px-5 py-3 text-sm font-semibold transition-all duration-300 ${
                   activeTab === tab.key
                     ? 'bg-agro-emerald text-white shadow-lg shadow-agro-emerald/20'
@@ -53,7 +61,7 @@ const FincaManagementPage = () => {
           transition={{ duration: 0.35 }}
           className="bg-slate-50 px-6 py-5 sm:px-8 sm:py-8"
         >
-          {activeTab === 'fincas' ? <FincaManagement /> : activeTab === 'cultivos' ? <CultivoManagementPage /> : <LoteManagementPage />}
+          {activeTab === 'fincas' ? <FincaManagement /> : activeTab === 'cultivos' ? <CultivoManagementPage /> : <LoteManagementPage refreshFincas={refreshLoteFincas} />}
         </motion.div>
       </DashboardCard>
     </div>

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { DashboardCard } from '../../componets/DashboardComponents';
 import { ImagePlus, Leaf, MapPin, Sparkles } from 'lucide-react';
 
-const LoteManagementPage = () => {
+const LoteManagementPage = ({ refreshFincas }) => {
   const [lotes, setLotes] = useState([]);
   const [cultivos, setCultivos] = useState([]);
   const [fincas, setFincas] = useState([]);
@@ -60,7 +60,7 @@ const LoteManagementPage = () => {
     fetchLotes();
     fetchCultivos();
     fetchFincas();
-  }, []);
+  }, [refreshFincas]);
 
   const resetForm = () => {
     setEditingId(null);
@@ -319,6 +319,15 @@ const LoteManagementPage = () => {
               <tbody className="divide-y divide-slate-200 bg-white">
                 {lotes.map((lote) => (
                   <tr key={lote.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-4">
+                      {lote.imagen ? (
+                        <img src={lote.imagen} alt={lote.nombre} className="h-12 w-12 rounded-xl object-cover" />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">
+                          Sin imagen
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-4 font-semibold text-slate-900">{lote.nombre}</td>
                     <td className="px-4 py-4">{lote.finca?.nombre || 'Sin finca'}</td>
                     <td className="px-4 py-4">{lote.cultivo?.nombre || 'Sin cultivo'}</td>
@@ -342,7 +351,7 @@ const LoteManagementPage = () => {
                 ))}
                 {lotes.length === 0 && (
                   <tr>
-                    <td colSpan="7" className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan="8" className="px-4 py-8 text-center text-slate-500">
                       No hay lotes registrados aún.
                     </td>
                   </tr>

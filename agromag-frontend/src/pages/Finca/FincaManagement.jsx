@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
-import { Plus, Edit, Trash2, Eye, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, ToggleLeft, ToggleRight, ImagePlus } from 'lucide-react';
 
 const FincaManagement = () => {
   const [fincas, setFincas] = useState([]);
@@ -14,6 +14,7 @@ const FincaManagement = () => {
     tamanoHectareas: '',
     descripcion: '',
     imagen: '',
+    imagenPreview: null,
     activo: true
   });
 
@@ -61,6 +62,7 @@ const FincaManagement = () => {
       tamanoHectareas: finca.tamanoHectareas.toString(),
       descripcion: finca.descripcion || '',
       imagen: finca.imagen || '',
+      imagenPreview: finca.imagen || null,
       activo: finca.activo
     });
     setShowForm(true);
@@ -74,6 +76,21 @@ const FincaManagement = () => {
       } catch (error) {
         console.error('Error deleting finca:', error);
       }
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({
+          ...prev,
+          imagen: reader.result,
+          imagenPreview: reader.result
+        }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -93,6 +110,7 @@ const FincaManagement = () => {
       tamanoHectareas: '',
       descripcion: '',
       imagen: '',
+      imagenPreview: null,
       activo: true
     });
     setEditingFinca(null);
@@ -193,6 +211,27 @@ const FincaManagement = () => {
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-agro-emerald focus:border-transparent"
               />
             </div>
+            <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-end">
+              <label className="block text-sm font-medium text-slate-700">
+                Imagen de la finca
+                <div className="mt-2 flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                  <div className="grid h-14 w-14 place-items-center rounded-2xl bg-agro-emerald/10 text-agro-emerald">
+                    <ImagePlus className="h-6 w-6" />
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="file:mr-4 file:rounded-full file:border-0 file:bg-agro-emerald file:px-4 file:py-2 file:text-sm file:text-white"
+                  />
+                </div>
+              </label>
+            </div>
+            {formData.imagenPreview && (
+              <div className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
+                <img src={formData.imagenPreview} alt="Vista previa finca" className="h-56 w-full object-cover" />
+              </div>
+            )}
             <div className="flex gap-2">
               <button
                 type="submit"
@@ -217,6 +256,9 @@ const FincaManagement = () => {
           <thead className="bg-slate-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Imagen
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                 Nombre
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -236,7 +278,16 @@ const FincaManagement = () => {
           <tbody className="bg-white divide-y divide-slate-200">
             {fincas.map((finca) => (
               <tr key={finca.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                <td className="px-6 py-4 whitespace-nowrap">
+                {finca.imagen ? (
+                  <img src={finca.imagen} alt={finca.nombre} className="h-12 w-12 rounded-xl object-cover" />
+                ) : (
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">
+                    Sin imagen
+                  </div>
+                )}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
                   {finca.nombre}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">

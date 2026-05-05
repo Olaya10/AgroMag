@@ -25,10 +25,18 @@ export const DashboardSidebar = ({
   onToggle
 }) => {
   const [expanded, setExpanded] = React.useState(isOpen);
+  const [isMobile, setIsMobile] = React.useState(false);
 
   React.useEffect(() => {
     setExpanded(isOpen);
   }, [isOpen]);
+
+  React.useEffect(() => {
+    const updateIsMobile = () => setIsMobile(window.innerWidth < 768);
+    updateIsMobile();
+    window.addEventListener('resize', updateIsMobile);
+    return () => window.removeEventListener('resize', updateIsMobile);
+  }, []);
 
   const toggleSidebar = () => {
     if (onToggle) {
@@ -115,7 +123,9 @@ export const DashboardSidebar = ({
                 whileHover={{ x: 5 }}
                 onClick={() => {
                   onItemClick(item.key);
-                  closeSidebar(); // Cerrar en mobile
+                  if (isMobile) {
+                    closeSidebar();
+                  }
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden ${
                   isActive
@@ -174,17 +184,15 @@ export const DashboardSidebar = ({
         />
       )}
 
-      {/* Toggle button para mobile */}
-      {!expanded && (
-        <motion.button
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          onClick={toggleSidebar}
-          className="md:hidden fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-soft hover:shadow-medium"
-        >
-          <Menu className="w-6 h-6 text-agro-forest" />
-        </motion.button>
-      )}
+      {/* Toggle button para mobile y desktop */}
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        onClick={toggleSidebar}
+        className="fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-soft hover:shadow-medium"
+      >
+        {expanded ? <X className="w-6 h-6 text-agro-forest" /> : <Menu className="w-6 h-6 text-agro-forest" />}
+      </motion.button>
     </>
   );
 };

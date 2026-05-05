@@ -218,7 +218,7 @@ const HomePage = ({ onStartLogin }) => {
       {/* Footer */}
       <footer className="border-t border-slate-200 py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-600">
-          <p>© 2024 AgroMag. Gestión agrícola inteligente para el futuro.</p>
+          <p>© 2026 AgroMag. Gestión agrícola inteligente para el futuro.</p>
         </div>
       </footer>
     </div>

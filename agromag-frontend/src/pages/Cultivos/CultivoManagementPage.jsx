@@ -125,6 +125,18 @@ const CultivoManagementPage = () => {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (window.confirm('¿Estás seguro de eliminar este cultivo?')) {
+      try {
+        await axios.delete(`${API_URL}/${id}`);
+        fetchCultivos();
+      } catch (error) {
+        console.error('Error al eliminar cultivo:', error);
+        alert('❌ Error al eliminar cultivo: ' + (error.response?.data || error.message));
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1.3fr]">
@@ -244,6 +256,7 @@ const CultivoManagementPage = () => {
             <table className="min-w-full divide-y divide-slate-200 text-left text-sm text-slate-700">
               <thead className="bg-slate-100 text-slate-700">
                 <tr>
+                  <th className="px-4 py-4 font-semibold">Imagen</th>
                   <th className="px-4 py-4 font-semibold">Cultivo</th>
                   <th className="px-4 py-4 font-semibold">Cosecha</th>
                   <th className="px-4 py-4 font-semibold">Temperatura</th>
@@ -255,6 +268,15 @@ const CultivoManagementPage = () => {
               <tbody className="divide-y divide-slate-200 bg-white">
                 {cultivos.map((cultivo) => (
                   <tr key={cultivo.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-4">
+                      {cultivo.imagen ? (
+                        <img src={cultivo.imagen} alt={cultivo.nombre} className="h-12 w-12 rounded-xl object-cover" />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">
+                          Sin imagen
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-4 font-semibold text-slate-900">{cultivo.nombre}</td>
                     <td className="px-4 py-4">{cultivo.diasCosecha ?? '-'}</td>
                     <td className="px-4 py-4">{cultivo.temperapturOptima || '-'}</td>
