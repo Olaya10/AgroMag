@@ -72,4 +72,17 @@ public class CultivoController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PatchMapping("/{id}/active")
+    public ResponseEntity<?> toggleActive(@PathVariable Long id) {
+        try {
+            Cultivo cultivo = cultivoService.toggleActive(id);
+            if (cultivo != null) {
+                return ResponseEntity.ok(cultivo);
+            }
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

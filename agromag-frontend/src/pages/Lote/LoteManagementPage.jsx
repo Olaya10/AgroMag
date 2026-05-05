@@ -7,8 +7,10 @@ import { ImagePlus, Leaf, MapPin, Sparkles } from 'lucide-react';
 const LoteManagementPage = () => {
   const [lotes, setLotes] = useState([]);
   const [cultivos, setCultivos] = useState([]);
+  const [fincas, setFincas] = useState([]);
   const [formData, setFormData] = useState({
     nombre: '',
+    finca: '',
     cultivo: '',
     extensionHectareas: '',
     coordenadas: '',
@@ -22,6 +24,7 @@ const LoteManagementPage = () => {
 
   const API_URL = 'http://localhost:9000/api/finca/lotes';
   const CULTIVOS_URL = 'http://localhost:9000/api/finca/cultivos';
+  const FINCAS_URL = 'http://localhost:9000/api/finca/fincas/active';
 
   const fetchLotes = async () => {
     try {
@@ -43,15 +46,27 @@ const LoteManagementPage = () => {
     }
   };
 
+  const fetchFincas = async () => {
+    try {
+      const res = await axios.get(FINCAS_URL);
+      setFincas(res.data);
+    } catch (err) {
+      console.error('Error al cargar fincas', err);
+      alert('❌ Error al cargar fincas');
+    }
+  };
+
   useEffect(() => {
     fetchLotes();
     fetchCultivos();
+    fetchFincas();
   }, []);
 
   const resetForm = () => {
     setEditingId(null);
     setFormData({
       nombre: '',
+      finca: '',
       cultivo: '',
       extensionHectareas: '',
       coordenadas: '',
@@ -85,6 +100,11 @@ const LoteManagementPage = () => {
       return;
     }
 
+    if (!formData.finca) {
+      alert('❌ Debes seleccionar una finca');
+      return;
+    }
+
     if (!formData.cultivo) {
       alert('❌ Debes seleccionar un cultivo');
       return;
@@ -94,6 +114,7 @@ const LoteManagementPage = () => {
     try {
       const payload = {
         nombre: formData.nombre,
+        finca: { id: Number(formData.finca) },
         cultivo: { id: Number(formData.cultivo) },
         extensionHectareas: parseFloat(formData.extensionHectareas) || 0,
         coordenadas: formData.coordenadas,
@@ -124,6 +145,7 @@ const LoteManagementPage = () => {
     setEditingId(lote.id);
     setFormData({
       nombre: lote.nombre,
+      finca: lote.finca?.id || '',
       cultivo: lote.cultivo?.id || '',
       extensionHectareas: lote.extensionHectareas || '',
       coordenadas: lote.coordenadas || '',
@@ -165,6 +187,23 @@ const LoteManagementPage = () => {
                   required
                 />
               </label>
+              <label className="block text-sm text-slate-700">
+                Finca
+                <select
+                  value={formData.finca}
+                  onChange={(e) => setFormData({ ...formData, finca: e.target.value })}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  required
+                >
+                  <option value="">Selecciona una finca</option>
+                  {fincas.map((finca) => (
+                    <option key={finca.id} value={finca.id}>{finca.nombre}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm text-slate-700">
                 Cultivo principal
                 <select
@@ -269,6 +308,7 @@ const LoteManagementPage = () => {
               <thead className="bg-slate-100 text-slate-700">
                 <tr>
                   <th className="px-4 py-4 font-semibold">Lote</th>
+                  <th className="px-4 py-4 font-semibold">Finca</th>
                   <th className="px-4 py-4 font-semibold">Cultivo</th>
                   <th className="px-4 py-4 font-semibold">Etapa</th>
                   <th className="px-4 py-4 font-semibold">Extensión</th>
@@ -280,6 +320,7 @@ const LoteManagementPage = () => {
                 {lotes.map((lote) => (
                   <tr key={lote.id} className="hover:bg-slate-50">
                     <td className="px-4 py-4 font-semibold text-slate-900">{lote.nombre}</td>
+                    <td className="px-4 py-4">{lote.finca?.nombre || 'Sin finca'}</td>
                     <td className="px-4 py-4">{lote.cultivo?.nombre || 'Sin cultivo'}</td>
                     <td className="px-4 py-4 text-slate-600">{lote.etapaDesarrollo}</td>
                     <td className="px-4 py-4">{lote.extensionHectareas ?? '-' } ha</td>
@@ -301,7 +342,7 @@ const LoteManagementPage = () => {
                 ))}
                 {lotes.length === 0 && (
                   <tr>
-                    <td colSpan="6" className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan="7" className="px-4 py-8 text-center text-slate-500">
                       No hay lotes registrados aún.
                     </td>
                   </tr>

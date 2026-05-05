@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { DashboardCard } from '../../componets/DashboardComponents';
-import { Leaf, Layers, Sparkles } from 'lucide-react';
+import { Leaf, Layers, Sparkles, ToggleLeft, ToggleRight } from 'lucide-react';
 
 const CultivoManagementPage = () => {
   const [cultivos, setCultivos] = useState([]);
@@ -13,7 +13,8 @@ const CultivoManagementPage = () => {
     temperapturOptima: '',
     humidadOptima: '',
     imagen: null,
-    imagenPreview: null
+    imagenPreview: null,
+    activo: true
   });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -43,7 +44,8 @@ const CultivoManagementPage = () => {
       temperapturOptima: '',
       humidadOptima: '',
       imagen: null,
-      imagenPreview: null
+      imagenPreview: null,
+      activo: true
     });
   };
 
@@ -108,19 +110,18 @@ const CultivoManagementPage = () => {
       temperapturOptima: cultivo.temperapturOptima || '',
       humidadOptima: cultivo.humidadOptima || '',
       imagen: cultivo.imagen || null,
-      imagenPreview: cultivo.imagen || null
+      imagenPreview: cultivo.imagen || null,
+      activo: cultivo.activo ?? true
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar este cultivo?')) return;
+  const handleToggleActive = async (id) => {
     try {
-      await axios.delete(`${API_URL}/${id}`);
-      alert('✅ Cultivo eliminado');
+      await axios.patch(`${API_URL}/${id}/active`);
       fetchCultivos();
-    } catch (err) {
-      alert('❌ No se pudo eliminar el cultivo.');
+    } catch (error) {
+      console.error('Error toggling cultivo status:', error);
     }
   };
 
@@ -187,6 +188,20 @@ const CultivoManagementPage = () => {
               </div>
             </div>
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-sm text-slate-700">Estado</label>
+                <select
+                  value={formData.activo}
+                  onChange={(e) => setFormData({ ...formData, activo: e.target.value === 'true' })}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                >
+                  <option value={true}>Activo</option>
+                  <option value={false}>Inactivo</option>
+                </select>
+              </div>
+            </div>
+
             <label className="block text-sm text-slate-700">
               Descripción
               <textarea
@@ -233,6 +248,7 @@ const CultivoManagementPage = () => {
                   <th className="px-4 py-4 font-semibold">Cosecha</th>
                   <th className="px-4 py-4 font-semibold">Temperatura</th>
                   <th className="px-4 py-4 font-semibold">Humedad</th>
+                  <th className="px-4 py-4 font-semibold">Estado</th>
                   <th className="px-4 py-4 font-semibold">Acciones</th>
                 </tr>
               </thead>
@@ -244,12 +260,32 @@ const CultivoManagementPage = () => {
                     <td className="px-4 py-4">{cultivo.temperapturOptima || '-'}</td>
                     <td className="px-4 py-4">{cultivo.humidadOptima || '-'}</td>
                     <td className="px-4 py-4">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        cultivo.activo
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {cultivo.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
                       <button
                         type="button"
                         onClick={() => handleEdit(cultivo)}
                         className="mr-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
                       >
                         Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleActive(cultivo.id)}
+                        className={`mr-2 rounded-2xl px-3 py-2 text-xs font-semibold transition ${
+                          cultivo.activo
+                            ? 'bg-orange-100 text-orange-600 hover:bg-orange-200'
+                            : 'bg-green-100 text-green-600 hover:bg-green-200'
+                        }`}
+                      >
+                        {cultivo.activo ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                       </button>
                       <button
                         type="button"
@@ -263,7 +299,7 @@ const CultivoManagementPage = () => {
                 ))}
                 {cultivos.length === 0 && (
                   <tr>
-                    <td colSpan="5" className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan="6" className="px-4 py-8 text-center text-slate-500">
                       No hay cultivos registrados.
                     </td>
                   </tr>

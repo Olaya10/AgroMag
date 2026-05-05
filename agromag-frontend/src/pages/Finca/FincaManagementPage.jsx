@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { DashboardCard } from '../../componets/DashboardComponents';
+import FincaManagement from './FincaManagement';
 import CultivoManagementPage from '../Cultivos/CultivoManagementPage';
 import LoteManagementPage from '../Lote/LoteManagementPage';
 
 const TABS = [
+  { key: 'fincas', label: '🏡 Fincas' },
   { key: 'cultivos', label: '🌱 Cultivos' },
   { key: 'lotes', label: '🌾 Lotes' }
 ];
@@ -25,7 +27,7 @@ const FincaManagementPage = () => {
             <h1 className="mt-3 text-3xl font-display font-bold text-slate-900">Gestión integral de cultivos y lotes</h1>
             <p className="mt-2 max-w-2xl text-slate-600">Administra tus parcelas con un flujo claro, unificado y visual.</p>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:w-fit">
+          <div className="grid grid-cols-3 gap-3 sm:w-fit">
             {TABS.map((tab) => (
               <button
                 key={tab.key}
@@ -51,7 +53,7 @@ const FincaManagementPage = () => {
           transition={{ duration: 0.35 }}
           className="bg-slate-50 px-6 py-5 sm:px-8 sm:py-8"
         >
-          {activeTab === 'cultivos' ? <CultivoManagementPage /> : <LoteManagementPage />}
+          {activeTab === 'fincas' ? <FincaManagement /> : activeTab === 'cultivos' ? <CultivoManagementPage /> : <LoteManagementPage />}
         </motion.div>
       </DashboardCard>
     </div>

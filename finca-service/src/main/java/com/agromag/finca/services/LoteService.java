@@ -2,6 +2,7 @@ package com.agromag.finca.services;
 
 import com.agromag.finca.entities.Lote;
 import com.agromag.finca.entities.Cultivo;
+import com.agromag.finca.entities.Finca;
 import com.agromag.finca.repositories.LoteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,14 +17,24 @@ public class LoteService {
     @Autowired
     private CultivoService cultivoService;
 
+    @Autowired
+    private FincaService fincaService;
+
     public List<Lote> listarPorLote() {
         return loteRepository.findAll();
     }
 
     public Lote guardar(Lote lote) throws Exception {
+        if (lote.getFinca() == null || lote.getFinca().getId() == null) {
+            throw new Exception("Debe asignar una finca al lote");
+        }
         if (lote.getCultivo() == null || lote.getCultivo().getId() == null) {
             throw new Exception("Debe asignar un cultivo al lote");
         }
+        
+        Finca finca = fincaService.getFincaById(lote.getFinca().getId())
+                .orElseThrow(() -> new Exception("Finca no encontrada"));
+        lote.setFinca(finca);
         
         Cultivo cultivo = cultivoService.obtenerPorId(lote.getCultivo().getId());
         lote.setCultivo(cultivo);
@@ -56,6 +67,12 @@ public class LoteService {
         if (detalles.getCultivo() != null && detalles.getCultivo().getId() != null) {
             Cultivo cultivo = cultivoService.obtenerPorId(detalles.getCultivo().getId());
             lote.setCultivo(cultivo);
+        }
+        
+        if (detalles.getFinca() != null && detalles.getFinca().getId() != null) {
+            Finca finca = fincaService.getFincaById(detalles.getFinca().getId())
+                    .orElseThrow(() -> new Exception("Finca no encontrada"));
+            lote.setFinca(finca);
         }
 
         return loteRepository.save(lote);

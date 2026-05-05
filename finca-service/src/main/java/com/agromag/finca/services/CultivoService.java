@@ -73,5 +73,10 @@ public class CultivoService {
         cultivoRepository.save(cultivo);
     }
 
-    
+    public Cultivo toggleActive(Long id) throws Exception {
+        Cultivo cultivo = cultivoRepository.findById(id)
+                .orElseThrow(() -> new Exception("Cultivo no encontrado"));
+        cultivo.setActivo(!cultivo.getActivo());
+        return cultivoRepository.save(cultivo);
+    }
 }
