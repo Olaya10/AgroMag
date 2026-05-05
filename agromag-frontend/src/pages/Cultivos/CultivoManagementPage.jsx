@@ -19,7 +19,8 @@ const CultivoManagementPage = () => {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const API_URL = 'http://localhost:9000/api/finca/cultivos';
+  const API_BASE_URL = 'http://localhost:9000/api/finca/cultivos';
+  const API_URL = `${API_BASE_URL}/todos`;
 
   const fetchCultivos = async () => {
     try {
@@ -84,10 +85,10 @@ const CultivoManagementPage = () => {
       };
 
       if (editingId) {
-        await axios.put(`${API_URL}/${editingId}`, payload);
+        await axios.put(`${API_BASE_URL}/${editingId}`, payload);
         alert('🌱 Cultivo actualizado correctamente');
       } else {
-        await axios.post(API_URL, payload);
+        await axios.post(API_BASE_URL, payload);
         alert('🌱 Cultivo registrado correctamente');
       }
 
@@ -118,7 +119,7 @@ const CultivoManagementPage = () => {
 
   const handleToggleActive = async (id) => {
     try {
-      await axios.patch(`${API_URL}/${id}/active`);
+      await axios.patch(`${API_BASE_URL}/${id}/active`);
       fetchCultivos();
     } catch (error) {
       console.error('Error toggling cultivo status:', error);
@@ -128,7 +129,7 @@ const CultivoManagementPage = () => {
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar este cultivo?')) {
       try {
-        await axios.delete(`${API_URL}/${id}`);
+        await axios.delete(`${API_BASE_URL}/${id}`);
         fetchCultivos();
       } catch (error) {
         console.error('Error al eliminar cultivo:', error);

@@ -157,6 +157,7 @@ const LoteManagementPage = ({ refreshFincas }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  return (
     <div className="space-y-6">
       <DashboardCard
         title={editingId ? 'Editar lote' : 'Nuevo lote'}
@@ -360,6 +361,6 @@ const LoteManagementPage = ({ refreshFincas }) => {
         </div>
       </DashboardCard>
     </div>
-};
+)};
 
 export default LoteManagementPage;
