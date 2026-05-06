@@ -1,17 +1,27 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { DashboardCard } from '../../componets/DashboardComponents';
 import { Droplet, FlaskConical, CheckCircle2 } from 'lucide-react';
 
 const OperationsPage = ({ currentUser }) => {
+  const [fincas, setFincas] = useState([]);
   const [lotes, setLotes] = useState([]);
   const [insumos, setInsumos] = useState([]);
   const [riegos, setRiegos] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const [riegoData, setRiegoData] = useState({ loteId: '', cantidadAguaLitros: '', fechaHora: '', observaciones: '' });
-  const [aplicacionData, setAplicacionData] = useState({ loteId: '', insumoId: '', dosis: '' });
+  const [riegoData, setRiegoData] = useState({ fincaId: '', loteId: '', cantidadAguaLitros: '', fechaHora: '', observaciones: '' });
+  const [aplicacionData, setAplicacionData] = useState({ fincaId: '', loteId: '', insumoId: '', dosis: '', fecha: '' });
+
+  const fetchFincas = async () => {
+    try {
+      const res = await axios.get('http://localhost:9000/api/finca/fincas');
+      setFincas(res.data);
+    } catch (err) {
+      console.error('Error al cargar fincas', err);
+    }
+  };
 
   const fetchLotes = async () => {
     try {
@@ -20,6 +30,11 @@ const OperationsPage = ({ currentUser }) => {
     } catch (err) {
       console.error('Error al cargar lotes', err);
     }
+  };
+
+  const getLotesByFinca = (fincaId) => {
+    if (!fincaId) return [];
+    return lotes.filter((lote) => lote.finca?.id === Number(fincaId));
   };
 
   const fetchInsumos = async () => {
@@ -41,6 +56,7 @@ const OperationsPage = ({ currentUser }) => {
   };
 
   useEffect(() => {
+    fetchFincas();
     fetchLotes();
     fetchInsumos();
     fetchRiegos();
@@ -57,9 +73,10 @@ const OperationsPage = ({ currentUser }) => {
         lote: { id: Number(riegoData.loteId) }
       });
       alert('💧 Riego registrado correctamente');
-      setRiegoData({ loteId: '', cantidadAguaLitros: '', fechaHora: '', observaciones: '' });
+      setRiegoData({ fincaId: '', loteId: '', cantidadAguaLitros: '', fechaHora: '', observaciones: '' });
       fetchRiegos();
-    } catch (err) {
+    } catch (error) {
+      console.error('Error al registrar el riego', error);
       alert('❌ Error al registrar el riego');
     } finally {
       setActionLoading(false);
@@ -72,14 +89,16 @@ const OperationsPage = ({ currentUser }) => {
     try {
       await axios.post('http://localhost:9000/api/inventory/bodega/aplicar', {
         loteId: Number(aplicacionData.loteId),
-        operarioId: currentUser.id,
+        operarioId: currentUser?.id,
         dosis: Number(aplicacionData.dosis),
-        insumo: { id: Number(aplicacionData.insumoId) }
+        insumo: { id: Number(aplicacionData.insumoId) },
+        fecha: aplicacionData.fecha || new Date().toISOString()
       });
       alert('🌱 Aplicación de insumo registrada');
-      setAplicacionData({ loteId: '', insumoId: '', dosis: '' });
+      setAplicacionData({ fincaId: '', loteId: '', insumoId: '', dosis: '', fecha: '' });
       fetchInsumos();
-    } catch (err) {
+    } catch (error) {
+      console.error('Error al registrar la aplicación', error);
       alert('❌ Error al registrar la aplicación');
     } finally {
       setActionLoading(false);
@@ -88,7 +107,7 @@ const OperationsPage = ({ currentUser }) => {
 
   return (
     <div className="space-y-6">
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-white/80 backdrop-blur-xl border border-slate-200 shadow-medium rounded-3xl p-8"
@@ -116,25 +135,42 @@ const OperationsPage = ({ currentUser }) => {
             </div>
           </div>
         </div>
-      </motion.div>
+      </Motion.div>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <DashboardCard title="Registrar riego" subtitle="Crea un nuevo registro de riego">
           <form className="space-y-4" onSubmit={handleRiegoSubmit}>
-            <label className="block text-sm text-slate-700">
-              Lote destino
-              <select
-                required
-                value={riegoData.loteId}
-                onChange={(e) => setRiegoData({ ...riegoData, loteId: e.target.value })}
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-              >
-                <option value="">Selecciona un lote</option>
-                {lotes.map((lote) => (
-                  <option key={lote.id} value={lote.id}>{lote.nombre}</option>
-                ))}
-              </select>
-            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm text-slate-700">
+                Finca
+                <select
+                  required
+                  value={riegoData.fincaId}
+                  onChange={(e) => setRiegoData({ ...riegoData, fincaId: e.target.value, loteId: '' })}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                >
+                  <option value="">Selecciona una finca</option>
+                  {fincas.map((finca) => (
+                    <option key={finca.id} value={finca.id}>{finca.nombre}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-sm text-slate-700">
+                Lote destino
+                <select
+                  required
+                  value={riegoData.loteId}
+                  onChange={(e) => setRiegoData({ ...riegoData, loteId: e.target.value })}
+                  disabled={!riegoData.fincaId}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20 disabled:cursor-not-allowed disabled:bg-slate-100"
+                >
+                  <option value="">{riegoData.fincaId ? 'Selecciona un lote' : 'Selecciona primero una finca'}</option>
+                  {getLotesByFinca(riegoData.fincaId).map((lote) => (
+                    <option key={lote.id} value={lote.id}>{lote.nombre}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm text-slate-700">
                 Volumen (L)
@@ -176,20 +212,37 @@ const OperationsPage = ({ currentUser }) => {
 
         <DashboardCard title="Aplicar insumo" subtitle="Registra una aplicación por lote">
           <form className="space-y-4" onSubmit={handleAplicacionSubmit}>
-            <label className="block text-sm text-slate-700">
-              Lote
-              <select
-                required
-                value={aplicacionData.loteId}
-                onChange={(e) => setAplicacionData({ ...aplicacionData, loteId: e.target.value })}
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-              >
-                <option value="">Selecciona un lote</option>
-                {lotes.map((lote) => (
-                  <option key={lote.id} value={lote.id}>{lote.nombre}</option>
-                ))}
-              </select>
-            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm text-slate-700">
+                Finca
+                <select
+                  required
+                  value={aplicacionData.fincaId}
+                  onChange={(e) => setAplicacionData({ ...aplicacionData, fincaId: e.target.value, loteId: '' })}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                >
+                  <option value="">Selecciona una finca</option>
+                  {fincas.map((finca) => (
+                    <option key={finca.id} value={finca.id}>{finca.nombre}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-sm text-slate-700">
+                Lote
+                <select
+                  required
+                  value={aplicacionData.loteId}
+                  onChange={(e) => setAplicacionData({ ...aplicacionData, loteId: e.target.value })}
+                  disabled={!aplicacionData.fincaId}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20 disabled:cursor-not-allowed disabled:bg-slate-100"
+                >
+                  <option value="">{aplicacionData.fincaId ? 'Selecciona un lote' : 'Selecciona primero una finca'}</option>
+                  {getLotesByFinca(aplicacionData.fincaId).map((lote) => (
+                    <option key={lote.id} value={lote.id}>{lote.nombre}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <label className="block text-sm text-slate-700">
               Insumo
               <select
@@ -204,19 +257,31 @@ const OperationsPage = ({ currentUser }) => {
                 ))}
               </select>
             </label>
-            <label className="block text-sm text-slate-700">
-              Dosis
-              <input
-                type="number"
-                min="0"
-                step="0.1"
-                placeholder="Cantidad aplicada"
-                value={aplicacionData.dosis}
-                onChange={(e) => setAplicacionData({ ...aplicacionData, dosis: e.target.value })}
-                required
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-              />
-            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm text-slate-700">
+                Fecha de aplicación
+                <input
+                  type="datetime-local"
+                  value={aplicacionData.fecha}
+                  onChange={(e) => setAplicacionData({ ...aplicacionData, fecha: e.target.value })}
+                  required
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                />
+              </label>
+              <label className="block text-sm text-slate-700">
+                Dosis
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="Cantidad aplicada"
+                  value={aplicacionData.dosis}
+                  onChange={(e) => setAplicacionData({ ...aplicacionData, dosis: e.target.value })}
+                  required
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                />
+              </label>
+            </div>
             <button type="submit" disabled={actionLoading} className="rounded-3xl bg-agro-emerald px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-agro-emerald/20 transition hover:bg-green-700">
               {actionLoading ? 'Guardando...' : 'Registrar Aplicación'}
             </button>

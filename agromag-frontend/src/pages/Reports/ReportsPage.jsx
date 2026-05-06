@@ -9,6 +9,7 @@ const ReportsPage = () => {
   const [cultivos, setCultivos] = useState([]);
   const [riegos, setRiegos] = useState([]);
   const [aplicaciones, setAplicaciones] = useState([]);
+  const [lotes, setLotes] = useState([]);
   const [reports, setReports] = useState([]);
   const [reportText, setReportText] = useState('');
   const [filterDays, setFilterDays] = useState('7');
@@ -19,15 +20,17 @@ const ReportsPage = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [cultivosRes, riegosRes, aplicacionesRes] = await Promise.all([
+      const [cultivosRes, riegosRes, aplicacionesRes, lotesRes] = await Promise.all([
         axios.get('http://localhost:9000/api/finca/cultivos'),
         axios.get('http://localhost:9000/api/finca/riegos'),
-        axios.get('http://localhost:9000/api/inventory/bodega/aplicaciones')
+        axios.get('http://localhost:9000/api/inventory/bodega/aplicaciones'),
+        axios.get('http://localhost:9000/api/finca/lotes')
       ]);
 
       setCultivos(cultivosRes.data || []);
       setRiegos(riegosRes.data || []);
       setAplicaciones(aplicacionesRes.data || []);
+      setLotes(lotesRes.data || []);
     } catch (error) {
       console.error('Error cargando los datos de reporte', error);
       alert('No se pudo cargar la información de reportes. Intenta nuevamente.');
@@ -108,6 +111,15 @@ const ReportsPage = () => {
     return new Date(dateString).toLocaleString();
   };
 
+  const getLoteInfo = (loteId) => {
+    const lote = lotes.find((item) => item.id === loteId || item.id === Number(loteId));
+    if (!lote) return { loteNombre: 'Lote desconocido', fincaNombre: 'Finca desconocida' };
+    return {
+      loteNombre: lote.nombre || 'Lote sin nombre',
+      fincaNombre: lote.finca?.nombre || 'Finca sin nombre'
+    };
+  };
+
   const downloadReport = () => {
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const margin = 40;
@@ -168,7 +180,10 @@ const ReportsPage = () => {
 
     makeSection('Cultivos', cultivos.slice(0, 10), (cultivo) => `• ${cultivo.nombre} — ${cultivo.descripcion || 'Sin descripción'}`);
     makeSection('Riegos recientes', riegos.slice(-10).reverse(), (riego) => `• ${formatDateTime(riego.fechaHora)} | Lote: ${riego.lote?.nombre || 'N/A'} | ${riego.cantidadAguaLitros} L | ${riego.observaciones || 'Sin observaciones'}`);
-    makeSection('Aplicaciones de insumos', aplicaciones.slice(-10).reverse(), (app) => `• ${formatDateTime(app.fecha)} | Insumo: ${app.insumo?.nombreComercial || 'N/A'} | Lote ID: ${app.loteId} | Dosis: ${app.dosis}`);
+    makeSection('Aplicaciones de insumos', aplicaciones.slice(-10).reverse(), (app) => {
+      const loteInfo = getLoteInfo(app.loteId);
+      return `• ${formatDateTime(app.fecha)} | Insumo: ${app.insumo?.nombreComercial || 'N/A'} | Finca: ${loteInfo.fincaNombre} | Lote: ${loteInfo.loteNombre} | Dosis: ${app.dosis}`;
+    });
 
     doc.save('Reporte-AgroMag.pdf');
   };
@@ -333,20 +348,23 @@ const ReportsPage = () => {
 
         <DashboardCard title="Últimas aplicaciones" subtitle="Últimos 5 movimientos registrados">
           <div className="space-y-4">
-            {aplicaciones.slice(-5).reverse().map((app) => (
-              <div key={app.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="font-semibold text-slate-900">{app.insumo?.nombreComercial || 'Insumo sin nombre'}</p>
-                    <p className="text-sm text-slate-500">{formatDateTime(app.fecha)}</p>
+            {aplicaciones.slice(-5).reverse().map((app) => {
+              const loteInfo = getLoteInfo(app.loteId);
+              return (
+                <div key={app.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-slate-900">{app.insumo?.nombreComercial || 'Insumo sin nombre'}</p>
+                      <p className="text-sm text-slate-500">{formatDateTime(app.fecha)}</p>
+                    </div>
+                    <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                      Dosis {app.dosis}
+                    </span>
                   </div>
-                  <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
-                    Dosis {app.dosis}
-                  </span>
+                  <p className="mt-3 text-sm text-slate-600">Finca: {loteInfo.fincaNombre} — Lote: {loteInfo.loteNombre}</p>
                 </div>
-                <p className="mt-3 text-sm text-slate-600">Lote ID: {app.loteId}</p>
-              </div>
-            ))}
+              );
+            })}
             {aplicaciones.length === 0 && <p className="text-sm text-slate-500">No hay aplicaciones registradas aún.</p>}
           </div>
         </DashboardCard>
