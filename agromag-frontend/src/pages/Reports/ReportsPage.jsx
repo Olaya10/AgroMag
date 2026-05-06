@@ -9,7 +9,12 @@ const ReportsPage = () => {
   const [cultivos, setCultivos] = useState([]);
   const [riegos, setRiegos] = useState([]);
   const [aplicaciones, setAplicaciones] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [reportText, setReportText] = useState('');
+  const [filterDays, setFilterDays] = useState('7');
+  const [dateSearch, setDateSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState({ name: 'Usuario', role: 'PRODUCTOR' });
 
   const fetchData = async () => {
     setLoading(true);
@@ -32,8 +37,71 @@ const ReportsPage = () => {
   };
 
   useEffect(() => {
+    const storedReports = localStorage.getItem('agroMagReports');
+    if (storedReports) {
+      try {
+        setReports(JSON.parse(storedReports));
+      } catch (error) {
+        console.warn('No se pudieron cargar los reportes guardados:', error);
+      }
+    }
+
+    try {
+      const storedUser = localStorage.getItem('agroMagUser');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        setCurrentUser({
+          name: parsedUser.name || 'Usuario',
+          role: parsedUser.role ? parsedUser.role.toUpperCase() : 'PRODUCTOR'
+        });
+      }
+    } catch (error) {
+      console.warn('No se pudo cargar el usuario actual:', error);
+    }
+
     fetchData();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('agroMagReports', JSON.stringify(reports));
+  }, [reports]);
+
+  const saveReport = () => {
+    const trimmed = reportText.trim();
+    if (!trimmed) {
+      alert('Escribe el contenido del reporte antes de guardarlo.');
+      return;
+    }
+
+    const newReport = {
+      id: Date.now(),
+      text: trimmed,
+      createdAt: new Date().toISOString(),
+      author: currentUser.name || 'Usuario',
+      authorRole: currentUser.role || 'PRODUCTOR'
+    };
+
+    setReports([newReport, ...reports]);
+    setReportText('');
+  };
+
+  const filteredReports = reports.filter((report) => {
+    if (filterDays !== 'all') {
+      const days = Number(filterDays);
+      const diffDays = (new Date() - new Date(report.createdAt)) / (1000 * 60 * 60 * 24);
+      if (diffDays > days) {
+        return false;
+      }
+    }
+
+    if (dateSearch.trim()) {
+      const searchValue = dateSearch.trim();
+      const reportDate = new Date(report.createdAt).toISOString().split('T')[0];
+      return reportDate.includes(searchValue);
+    }
+
+    return true;
+  });
 
   const formatDateTime = (dateString) => {
     if (!dateString) return '-';
@@ -147,6 +215,100 @@ const ReportsPage = () => {
           <div className="text-3xl font-semibold text-slate-900">{aplicaciones.length}</div>
         </DashboardCard>
       </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/80 backdrop-blur-xl border border-slate-200 shadow-medium rounded-3xl p-8"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.24em] text-agro-emerald font-semibold">Reportes escritos</p>
+            <h2 className="mt-3 text-2xl font-display font-bold text-slate-900">Notas del productor y administrador</h2>
+            <p className="mt-2 max-w-2xl text-slate-600">Productor y administrador pueden escribir reportes libres. Filtra por días o busca por fecha.</p>
+            <p className="mt-1 text-sm text-slate-500">Autor actual: <strong>{currentUser.name}</strong> — Rol: <strong>{currentUser.role}</strong></p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={saveReport}
+              className="inline-flex items-center gap-2 rounded-3xl bg-agro-emerald px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-agro-emerald/20 transition hover:bg-green-700"
+            >
+              <FileText className="h-4 w-4" /> Guardar reporte
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={() => {
+              setReportText('');
+              setTimeout(() => document.querySelector('textarea').focus(), 100);
+            }}
+            className="inline-flex items-center gap-3 rounded-3xl bg-gradient-to-r from-agro-emerald to-green-600 px-8 py-4 text-lg font-bold text-white shadow-xl shadow-agro-emerald/30 transition hover:from-green-600 hover:to-agro-emerald hover:shadow-2xl"
+          >
+            <FileText className="h-5 w-5" /> Crear Nuevo Reporte
+          </button>
+        </div>
+
+        <textarea
+          value={reportText}
+          onChange={(e) => setReportText(e.target.value)}
+          rows={5}
+          className="mt-6 w-full rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+          placeholder="Escribe aquí tu reporte..."
+        />
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-700">Filtrar por días</span>
+            <select
+              value={filterDays}
+              onChange={(e) => setFilterDays(e.target.value)}
+              className="mt-2 w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+            >
+              <option value="7">Últimos 7 días</option>
+              <option value="30">Últimos 30 días</option>
+              <option value="90">Últimos 90 días</option>
+              <option value="all">Todos los reportes</option>
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-700">Buscar por fecha</span>
+            <input
+              type="search"
+              value={dateSearch}
+              onChange={(e) => setDateSearch(e.target.value)}
+              className="mt-2 w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+              placeholder="Buscar por fecha (YYYY-MM-DD)"
+            />
+          </label>
+        </div>
+
+        <div className="mt-8 space-y-4">
+          {filteredReports.length === 0 ? (
+            <p className="text-sm text-slate-500">No hay reportes disponibles con los filtros seleccionados.</p>
+          ) : (
+            filteredReports.map((report) => (
+              <div key={report.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-semibold text-slate-900">{report.author}</p>
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                      <span>{formatDateTime(report.createdAt)}</span>
+                      <span className="inline-flex rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">{report.authorRole || 'PRODUCTOR'}</span>
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-agro-emerald/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-agro-emerald">
+                    Reporte libre
+                  </span>
+                </div>
+                <p className="mt-4 whitespace-pre-line text-sm leading-6 text-slate-700">{report.text}</p>
+              </div>
+            ))
+          )}
+        </div>
+      </motion.div>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <DashboardCard title="Últimos riegos" subtitle="Últimos 5 eventos registrados">
