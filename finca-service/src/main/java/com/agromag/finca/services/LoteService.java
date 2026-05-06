@@ -24,6 +24,10 @@ public class LoteService {
         return loteRepository.findAll();
     }
 
+    public List<Lote> listarPorFinca(Long fincaId) {
+        return loteRepository.findByFincaId(fincaId);
+    }
+
     public Lote guardar(Lote lote) throws Exception {
         if (lote.getFinca() == null || lote.getFinca().getId() == null) {
             throw new Exception("Debe asignar una finca al lote");

@@ -5,9 +5,11 @@ import { Plus, Edit, Trash2, Eye, ToggleLeft, ToggleRight, ImagePlus } from 'luc
 
 const FincaManagement = () => {
   const [fincas, setFincas] = useState([]);
+  const [lotes, setLotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingFinca, setEditingFinca] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     nombre: '',
     ubicacion: '',
@@ -24,13 +26,21 @@ const FincaManagement = () => {
 
   const loadFincas = async () => {
     try {
-      const response = await axios.get('http://localhost:9000/api/finca/fincas');
-      setFincas(response.data);
+      const [fincasResponse, lotesResponse] = await Promise.all([
+        axios.get('http://localhost:9000/api/finca/fincas'),
+        axios.get('http://localhost:9000/api/finca/lotes')
+      ]);
+      setFincas(fincasResponse.data);
+      setLotes(lotesResponse.data);
     } catch (error) {
       console.error('Error loading fincas:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const getLotesForFinca = (fincaId) => {
+    return lotes.filter(lote => lote.finca && lote.finca.id === fincaId);
   };
 
   const handleSubmit = async (e) => {
@@ -103,19 +113,10 @@ const FincaManagement = () => {
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      nombre: '',
-      ubicacion: '',
-      tamanoHectareas: '',
-      descripcion: '',
-      imagen: '',
-      imagenPreview: null,
-      activo: true
-    });
-    setEditingFinca(null);
-    setShowForm(false);
-  };
+  const filteredFincas = fincas.filter(finca =>
+    finca.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    finca.ubicacion.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -136,6 +137,16 @@ const FincaManagement = () => {
           <Plus size={20} />
           Nueva Finca
         </button>
+      </div>
+
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Buscar fincas por nombre o ubicación..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-agro-emerald focus:border-transparent"
+        />
       </div>
 
       {showForm && (
@@ -268,6 +279,9 @@ const FincaManagement = () => {
                 Tamaño (ha)
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Lotes
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                 Estado
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -276,62 +290,83 @@ const FincaManagement = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-slate-200">
-            {fincas.map((finca) => (
-              <tr key={finca.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                {finca.imagen ? (
-                  <img src={finca.imagen} alt={finca.nombre} className="h-12 w-12 rounded-xl object-cover" />
-                ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">
-                    Sin imagen
-                  </div>
-                )}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                  {finca.nombre}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                  {finca.ubicacion}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                  {finca.tamanoHectareas}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    finca.activo
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {finca.activo ? 'Activo' : 'Inactivo'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                  <button
-                    onClick={() => handleEdit(finca)}
-                    className="text-indigo-600 hover:text-indigo-900"
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleToggleActive(finca.id)}
-                    className={finca.activo ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'}
-                  >
-                    {finca.activo ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(finca.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {filteredFincas.map((finca) => {
+              const fincaLotes = getLotesForFinca(finca.id);
+              return (
+                <tr key={finca.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {finca.imagen ? (
+                      <img src={finca.imagen} alt={finca.nombre} className="h-12 w-12 rounded-xl object-cover" />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">
+                        Sin imagen
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                    {finca.nombre}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                    {finca.ubicacion}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                    {finca.tamanoHectareas} ha
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                    {fincaLotes.length > 0 ? (
+                      <div className="space-y-1">
+                        {fincaLotes.slice(0, 2).map(lote => (
+                          <div key={lote.id} className="text-xs bg-slate-100 px-2 py-1 rounded">
+                            {lote.nombre} ({lote.extensionHectareas} ha)
+                          </div>
+                        ))}
+                        {fincaLotes.length > 2 && (
+                          <div className="text-xs text-slate-400">
+                            +{fincaLotes.length - 2} más...
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400">Sin lotes</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      finca.activo
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {finca.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                    <button
+                      onClick={() => handleEdit(finca)}
+                      className="text-indigo-600 hover:text-indigo-900"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleToggleActive(finca.id)}
+                      className={finca.activo ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'}
+                    >
+                      {finca.activo ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(finca.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
-        {fincas.length === 0 && (
+        {filteredFincas.length === 0 && (
           <div className="text-center py-12 text-slate-500">
-            No hay fincas registradas
+            {searchTerm ? 'No se encontraron fincas que coincidan con la búsqueda' : 'No hay fincas registradas'}
           </div>
         )}
       </div>

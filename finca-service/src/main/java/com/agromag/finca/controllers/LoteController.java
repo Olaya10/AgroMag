@@ -20,6 +20,11 @@ public class LoteController {
         return loteService.listarPorLote();
     }
 
+    @GetMapping("/finca/{fincaId}")
+    public List<Lote> listarPorFinca(@PathVariable Long fincaId) {
+        return loteService.listarPorFinca(fincaId);
+    }
+
     @PostMapping
     public ResponseEntity<?> guardar(@RequestBody Lote lote) {
         try {
