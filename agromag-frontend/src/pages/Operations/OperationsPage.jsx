@@ -9,7 +9,12 @@ const OperationsPage = ({ currentUser }) => {
   const [lotes, setLotes] = useState([]);
   const [insumos, setInsumos] = useState([]);
   const [riegos, setRiegos] = useState([]);
+  const [aplicaciones, setAplicaciones] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
+  const [filterRiegosFrom, setFilterRiegosFrom] = useState('');
+  const [filterRiegosTo, setFilterRiegosTo] = useState('');
+  const [filterAplicacionesFrom, setFilterAplicacionesFrom] = useState('');
+  const [filterAplicacionesTo, setFilterAplicacionesTo] = useState('');
 
   const [riegoData, setRiegoData] = useState({ fincaId: '', loteId: '', cantidadAguaLitros: '', fechaHora: '', observaciones: '' });
   const [aplicacionData, setAplicacionData] = useState({ fincaId: '', loteId: '', insumoId: '', dosis: '', fecha: '' });
@@ -46,6 +51,15 @@ const OperationsPage = ({ currentUser }) => {
     }
   };
 
+  const fetchAplicaciones = async () => {
+    try {
+      const res = await axios.get('http://localhost:9000/api/inventory/bodega/aplicaciones');
+      setAplicaciones(res.data);
+    } catch (err) {
+      console.error('Error al cargar aplicaciones', err);
+    }
+  };
+
   const fetchRiegos = async () => {
     try {
       const res = await axios.get('http://localhost:9000/api/finca/riegos');
@@ -60,6 +74,7 @@ const OperationsPage = ({ currentUser }) => {
     fetchLotes();
     fetchInsumos();
     fetchRiegos();
+    fetchAplicaciones();
   }, []);
 
   const handleRiegoSubmit = async (e) => {
@@ -83,6 +98,31 @@ const OperationsPage = ({ currentUser }) => {
     }
   };
 
+  const matchesDateRange = (dateValue, from, to) => {
+    if (!dateValue) return true;
+    const itemDate = new Date(dateValue);
+    if (from && itemDate < new Date(from)) return false;
+    if (to) {
+      const toDate = new Date(to);
+      toDate.setHours(23, 59, 59, 999);
+      if (itemDate > toDate) return false;
+    }
+    return true;
+  };
+
+  const resetRiegosFilters = () => {
+    setFilterRiegosFrom('');
+    setFilterRiegosTo('');
+  };
+
+  const resetAplicacionesFilters = () => {
+    setFilterAplicacionesFrom('');
+    setFilterAplicacionesTo('');
+  };
+
+  const filteredRiegos = riegos.filter((riego) => matchesDateRange(riego.fechaHora, filterRiegosFrom, filterRiegosTo));
+  const filteredAplicaciones = aplicaciones.filter((app) => matchesDateRange(app.fecha, filterAplicacionesFrom, filterAplicacionesTo));
+
   const handleAplicacionSubmit = async (e) => {
     e.preventDefault();
     setActionLoading(true);
@@ -97,6 +137,7 @@ const OperationsPage = ({ currentUser }) => {
       alert('🌱 Aplicación de insumo registrada');
       setAplicacionData({ fincaId: '', loteId: '', insumoId: '', dosis: '', fecha: '' });
       fetchInsumos();
+      fetchAplicaciones();
     } catch (error) {
       console.error('Error al registrar la aplicación', error);
       alert('❌ Error al registrar la aplicación');
@@ -289,10 +330,41 @@ const OperationsPage = ({ currentUser }) => {
         </DashboardCard>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-3">
         <DashboardCard title="Riegos recientes" subtitle="Últimos eventos registrados">
+          <div className="mb-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm text-slate-700">
+                Desde
+                <input
+                  type="date"
+                  value={filterRiegosFrom}
+                  onChange={(e) => setFilterRiegosFrom(e.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                />
+              </label>
+              <label className="block text-sm text-slate-700">
+                Hasta
+                <input
+                  type="date"
+                  value={filterRiegosTo}
+                  onChange={(e) => setFilterRiegosTo(e.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                />
+              </label>
+            </div>
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={resetRiegosFilters}
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                Limpiar filtros
+              </button>
+            </div>
+          </div>
           <div className="space-y-4">
-            {riegos.slice(-5).reverse().map((riego) => (
+            {filteredRiegos.slice(-5).reverse().map((riego) => (
               <div key={riego.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -306,7 +378,61 @@ const OperationsPage = ({ currentUser }) => {
                 <p className="mt-3 text-sm text-slate-600">{riego.observaciones || 'Sin observaciones'}</p>
               </div>
             ))}
-            {riegos.length === 0 && <p className="text-sm text-slate-500">No hay registros de riegos aún.</p>}
+            {filteredRiegos.length === 0 && <p className="text-sm text-slate-500">No hay registros de riegos con ese rango de fechas.</p>}
+          </div>
+        </DashboardCard>
+
+        <DashboardCard title="Aplicaciones recientes" subtitle="Últimos insumos aplicados">
+          <div className="mb-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm text-slate-700">
+                Desde
+                <input
+                  type="date"
+                  value={filterAplicacionesFrom}
+                  onChange={(e) => setFilterAplicacionesFrom(e.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                />
+              </label>
+              <label className="block text-sm text-slate-700">
+                Hasta
+                <input
+                  type="date"
+                  value={filterAplicacionesTo}
+                  onChange={(e) => setFilterAplicacionesTo(e.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                />
+              </label>
+            </div>
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={resetAplicacionesFilters}
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                Limpiar filtros
+              </button>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {filteredAplicaciones.slice(-5).reverse().map((app) => {
+              const loteInfo = lotes.find((lote) => lote.id === app.loteId);
+              return (
+                <div key={app.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-900">{app.insumo?.nombreComercial || 'Insumo sin nombre'}</p>
+                      <p className="text-sm text-slate-500">{new Date(app.fecha).toLocaleString()}</p>
+                    </div>
+                    <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                      Dosis {app.dosis}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm text-slate-600">Finca: {loteInfo?.finca?.nombre || 'Finca desconocida'} — Lote: {loteInfo?.nombre || 'Lote desconocido'}</p>
+                </div>
+              );
+            })}
+            {filteredAplicaciones.length === 0 && <p className="text-sm text-slate-500">No hay aplicaciones con ese rango de fechas.</p>}
           </div>
         </DashboardCard>
 

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Lock, Mail, Leaf, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Lock, Mail, Leaf, AlertCircle, UserPlus, ShieldCheck } from 'lucide-react';
 
 const LoginPage = ({ onLoginSuccess, onBack }) => {
     const [loginData, setLoginData] = useState({ email: '', password: '' });
+    const [registerMode, setRegisterMode] = useState(false);
+    const [registerData, setRegisterData] = useState({ name: '', cedula: '', edad: '', email: '', password: '' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -17,6 +19,30 @@ const LoginPage = ({ onLoginSuccess, onBack }) => {
             onLoginSuccess(res.data);
         } catch (err) {
             setError('Credenciales incorrectas. Intenta de nuevo.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRegisterSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+
+        try {
+            await axios.post('http://localhost:9000/api/auth/register', {
+                ...registerData,
+                role: 'OPERARIO',
+                active: true,
+            });
+
+            const loginRes = await axios.post('http://localhost:9000/api/auth/login', {
+                email: registerData.email,
+                password: registerData.password,
+            });
+            onLoginSuccess(loginRes.data);
+        } catch (err) {
+            setError('No se pudo registrar. Verifica los datos e intenta de nuevo.');
         } finally {
             setLoading(false);
         }
