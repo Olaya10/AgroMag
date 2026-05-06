@@ -39,6 +39,7 @@ public class LoteService {
         Cultivo cultivo = cultivoService.obtenerPorId(lote.getCultivo().getId());
         lote.setCultivo(cultivo);
         
+        validarExtensionContraFinca(lote);
         return loteRepository.save(lote);
     }
 
@@ -75,6 +76,7 @@ public class LoteService {
             lote.setFinca(finca);
         }
 
+        validarExtensionContraFinca(lote);
         return loteRepository.save(lote);
     }
 
@@ -82,5 +84,17 @@ public class LoteService {
         Lote lote = loteRepository.findById(id)
                 .orElseThrow(() -> new Exception("Lote no encontrado"));
         loteRepository.delete(lote);
+    }
+
+    private void validarExtensionContraFinca(Lote lote) throws Exception {
+        if (lote.getExtensionHectareas() == null || lote.getExtensionHectareas() <= 0) {
+            throw new Exception("La extensión del lote debe ser mayor que 0");
+        }
+        if (lote.getFinca() == null || lote.getFinca().getTamanoHectareas() == null) {
+            throw new Exception("No se puede validar la extensión del lote sin una finca válida");
+        }
+        if (lote.getExtensionHectareas() > lote.getFinca().getTamanoHectareas()) {
+            throw new Exception("La extensión del lote no puede superar el tamaño de la finca (" + lote.getFinca().getTamanoHectareas() + " ha)");
+        }
     }
 }
