@@ -21,10 +21,10 @@ const ReportsPage = () => {
     setLoading(true);
     try {
       const [cultivosRes, riegosRes, aplicacionesRes, lotesRes] = await Promise.all([
-        axios.get('http://localhost:9000/api/finca/cultivos'),
-        axios.get('http://localhost:9000/api/finca/riegos'),
+        axios.get('http://localhost:9000/api/cultivos'),
+        axios.get('http://localhost:9000/api/riegos'),
         axios.get('http://localhost:9000/api/inventory/bodega/aplicaciones'),
-        axios.get('http://localhost:9000/api/finca/lotes')
+        axios.get('http://localhost:9000/api/lotes')
       ]);
 
       setCultivos(cultivosRes.data || []);

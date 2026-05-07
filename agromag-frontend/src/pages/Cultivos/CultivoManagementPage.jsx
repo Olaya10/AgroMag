@@ -19,7 +19,7 @@ const CultivoManagementPage = () => {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const API_BASE_URL = 'http://localhost:9000/api/finca/cultivos';
+  const API_BASE_URL = 'http://localhost:9000/api/cultivos';
   const API_URL = `${API_BASE_URL}/todos`;
 
   const fetchCultivos = async () => {

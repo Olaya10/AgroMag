@@ -21,7 +21,7 @@ const OperationsPage = ({ currentUser }) => {
 
   const fetchFincas = async () => {
     try {
-      const res = await axios.get('http://localhost:9000/api/finca/fincas');
+      const res = await axios.get('http://localhost:9000/api/fincas');
       setFincas(res.data);
     } catch (err) {
       console.error('Error al cargar fincas', err);
@@ -30,7 +30,7 @@ const OperationsPage = ({ currentUser }) => {
 
   const fetchLotes = async () => {
     try {
-      const res = await axios.get('http://localhost:9000/api/finca/lotes');
+      const res = await axios.get('http://localhost:9000/api/lotes');
       setLotes(res.data);
     } catch (err) {
       console.error('Error al cargar lotes', err);
@@ -62,7 +62,7 @@ const OperationsPage = ({ currentUser }) => {
 
   const fetchRiegos = async () => {
     try {
-      const res = await axios.get('http://localhost:9000/api/finca/riegos');
+      const res = await axios.get('http://localhost:9000/api/riegos');
       setRiegos(res.data);
     } catch (err) {
       console.error('Error al cargar riegos', err);
@@ -81,7 +81,7 @@ const OperationsPage = ({ currentUser }) => {
     e.preventDefault();
     setActionLoading(true);
     try {
-      await axios.post('http://localhost:9000/api/finca/riegos', {
+      await axios.post('http://localhost:9000/api/riegos', {
         fechaHora: riegoData.fechaHora || new Date().toISOString(),
         cantidadAguaLitros: Number(riegoData.cantidadAguaLitros),
         observaciones: riegoData.observaciones,

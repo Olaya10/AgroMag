@@ -22,9 +22,9 @@ const LoteManagementPage = ({ refreshFincas }) => {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const API_URL = 'http://localhost:9000/api/finca/lotes';
-  const CULTIVOS_URL = 'http://localhost:9000/api/finca/cultivos';
-  const FINCAS_URL = 'http://localhost:9000/api/finca/fincas/active';
+  const API_URL = 'http://localhost:9000/api/lotes';
+  const CULTIVOS_URL = 'http://localhost:9000/api/cultivos';
+  const FINCAS_URL = 'http://localhost:9000/api/fincas/active';
 
   const fetchLotes = async () => {
     try {
@@ -107,6 +107,11 @@ const LoteManagementPage = ({ refreshFincas }) => {
 
     if (!formData.cultivo) {
       alert('❌ Debes seleccionar un cultivo');
+      return;
+    }
+
+    if (!formData.extensionHectareas || formData.extensionHectareas <= 0) {
+      alert('❌ La extensión del lote debe ser mayor a 0 hectáreas');
       return;
     }
 
@@ -224,12 +229,13 @@ const LoteManagementPage = ({ refreshFincas }) => {
               Extensión (ha)
               <input
                 type="number"
-                min="0"
+                min="0.01"
                 step="0.01"
                 value={formData.extensionHectareas}
                 onChange={(e) => setFormData({ ...formData, extensionHectareas: e.target.value })}
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
                 placeholder="0.00"
+                required
               />
             </label>
             <label className="block text-sm text-slate-700">
