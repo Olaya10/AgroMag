@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { motion as Motion } from 'framer-motion';
 import { DashboardCard } from '../../componets/DashboardComponents';
 import { Droplet, FlaskConical, CheckCircle2 } from 'lucide-react';
@@ -21,7 +21,7 @@ const OperationsPage = ({ currentUser }) => {
 
   const fetchFincas = async () => {
     try {
-      const res = await axios.get('http://localhost:9000/api/fincas');
+      const res = await api.get('/fincas');
       setFincas(res.data);
     } catch (err) {
       console.error('Error al cargar fincas', err);
@@ -30,7 +30,7 @@ const OperationsPage = ({ currentUser }) => {
 
   const fetchLotes = async () => {
     try {
-      const res = await axios.get('http://localhost:9000/api/lotes');
+      const res = await api.get('/lotes');
       setLotes(res.data);
     } catch (err) {
       console.error('Error al cargar lotes', err);
@@ -44,7 +44,7 @@ const OperationsPage = ({ currentUser }) => {
 
   const fetchInsumos = async () => {
     try {
-      const res = await axios.get('http://localhost:9000/api/inventory/bodega/insumos');
+      const res = await api.get('/inventory/bodega/insumos');
       setInsumos(res.data);
     } catch (err) {
       console.error('Error al cargar insumos', err);
@@ -53,7 +53,7 @@ const OperationsPage = ({ currentUser }) => {
 
   const fetchAplicaciones = async () => {
     try {
-      const res = await axios.get('http://localhost:9000/api/inventory/bodega/aplicaciones');
+      const res = await api.get('/inventory/bodega/aplicaciones');
       setAplicaciones(res.data);
     } catch (err) {
       console.error('Error al cargar aplicaciones', err);
@@ -62,7 +62,7 @@ const OperationsPage = ({ currentUser }) => {
 
   const fetchRiegos = async () => {
     try {
-      const res = await axios.get('http://localhost:9000/api/riegos');
+      const res = await api.get('/riegos');
       setRiegos(res.data);
     } catch (err) {
       console.error('Error al cargar riegos', err);
@@ -81,7 +81,7 @@ const OperationsPage = ({ currentUser }) => {
     e.preventDefault();
     setActionLoading(true);
     try {
-      await axios.post('http://localhost:9000/api/riegos', {
+      await api.post('/riegos', {
         fechaHora: riegoData.fechaHora || new Date().toISOString(),
         cantidadAguaLitros: Number(riegoData.cantidadAguaLitros),
         observaciones: riegoData.observaciones,
@@ -127,7 +127,7 @@ const OperationsPage = ({ currentUser }) => {
     e.preventDefault();
     setActionLoading(true);
     try {
-      await axios.post('http://localhost:9000/api/inventory/bodega/aplicar', {
+      await api.post('/inventory/bodega/aplicar', {
         loteId: Number(aplicacionData.loteId),
         operarioId: currentUser?.id,
         dosis: Number(aplicacionData.dosis),

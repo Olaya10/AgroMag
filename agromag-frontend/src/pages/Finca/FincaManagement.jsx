@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import axios from 'axios';
+import api from '../../api';
 import { Plus, Edit, Trash2, Eye, ToggleLeft, ToggleRight, ImagePlus } from 'lucide-react';
 
 const FincaManagement = () => {
@@ -27,8 +27,8 @@ const FincaManagement = () => {
   const loadFincas = async () => {
     try {
       const [fincasResponse, lotesResponse] = await Promise.all([
-        axios.get('http://localhost:9000/api/fincas'),
-        axios.get('http://localhost:9000/api/lotes')
+        api.get('/fincas'),
+        api.get('/lotes')
       ]);
       setFincas(fincasResponse.data);
       setLotes(lotesResponse.data);
@@ -66,9 +66,9 @@ const FincaManagement = () => {
       };
 
       if (editingFinca) {
-        await axios.put(`http://localhost:9000/api/fincas/${editingFinca.id}`, data);
+        await api.put(`/fincas/${editingFinca.id}`, data);
       } else {
-        await axios.post('http://localhost:9000/api/fincas', data);
+        await api.post('/fincas', data);
       }
 
       loadFincas();
@@ -95,7 +95,7 @@ const FincaManagement = () => {
   const handleDelete = async (id) => {
     if (window.confirm('¿Estás seguro de eliminar esta finca?')) {
       try {
-        await axios.delete(`http://localhost:9000/api/fincas/${id}`);
+        await api.delete(`/fincas/${id}`);
         loadFincas();
       } catch (error) {
         console.error('Error deleting finca:', error);
@@ -120,7 +120,7 @@ const FincaManagement = () => {
 
   const handleToggleActive = async (id) => {
     try {
-      await axios.patch(`http://localhost:9000/api/fincas/${id}/active`);
+      await api.patch(`/fincas/${id}/active`);
       loadFincas();
     } catch (error) {
       console.error('Error toggling finca status:', error);

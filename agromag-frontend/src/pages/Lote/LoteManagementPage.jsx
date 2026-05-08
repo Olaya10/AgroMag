@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { motion } from 'framer-motion';
 import { DashboardCard } from '../../componets/DashboardComponents';
 import { ImagePlus, Leaf, MapPin, Sparkles } from 'lucide-react';
@@ -22,13 +22,13 @@ const LoteManagementPage = ({ refreshFincas }) => {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const API_URL = 'http://localhost:9000/api/lotes';
-  const CULTIVOS_URL = 'http://localhost:9000/api/cultivos';
-  const FINCAS_URL = 'http://localhost:9000/api/fincas/active';
+  const API_URL = '/lotes';
+  const CULTIVOS_URL = '/cultivos';
+  const FINCAS_URL = '/fincas/active';
 
   const fetchLotes = async () => {
     try {
-      const res = await axios.get(API_URL);
+      const res = await api.get(API_URL);
       setLotes(res.data);
     } catch (err) {
       console.error('Error al cargar lotes', err);
@@ -38,7 +38,7 @@ const LoteManagementPage = ({ refreshFincas }) => {
 
   const fetchCultivos = async () => {
     try {
-      const res = await axios.get(CULTIVOS_URL);
+      const res = await api.get(CULTIVOS_URL);
       setCultivos(res.data);
     } catch (err) {
       console.error('Error al cargar cultivos', err);
@@ -48,7 +48,7 @@ const LoteManagementPage = ({ refreshFincas }) => {
 
   const fetchFincas = async () => {
     try {
-      const res = await axios.get(FINCAS_URL);
+      const res = await api.get(FINCAS_URL);
       setFincas(res.data);
     } catch (err) {
       console.error('Error al cargar fincas', err);
@@ -129,10 +129,10 @@ const LoteManagementPage = ({ refreshFincas }) => {
       };
 
       if (editingId) {
-        await axios.put(`${API_URL}/${editingId}`, payload);
+        await api.put(`${API_URL}/${editingId}`, payload);
         alert('🌳 Lote actualizado correctamente');
       } else {
-        await axios.post(API_URL, payload);
+        await api.post(API_URL, payload);
         alert('🌳 Lote registrado correctamente en AgroMag');
       }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import jsPDF from 'jspdf';
 import { motion } from 'framer-motion';
+import api from '../../api';
 import { DashboardCard } from '../../componets/DashboardComponents';
 import { BarChart3, FileText, Download, Activity } from 'lucide-react';
 
@@ -21,10 +21,10 @@ const ReportsPage = () => {
     setLoading(true);
     try {
       const [cultivosRes, riegosRes, aplicacionesRes, lotesRes] = await Promise.all([
-        axios.get('http://localhost:9000/api/cultivos'),
-        axios.get('http://localhost:9000/api/riegos'),
-        axios.get('http://localhost:9000/api/inventory/bodega/aplicaciones'),
-        axios.get('http://localhost:9000/api/lotes')
+        api.get('/cultivos'),
+        api.get('/riegos'),
+        api.get('/inventory/bodega/aplicaciones'),
+        api.get('/lotes')
       ]);
 
       setCultivos(cultivosRes.data || []);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { motion } from 'framer-motion';
 import { DashboardCard } from '../../componets/DashboardComponents';
 import { Users, Search, UserPlus, Edit3, Trash2 } from 'lucide-react';
@@ -11,11 +11,11 @@ const UserManagementPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const API_URL = 'http://localhost:9000/api/auth';
+  const API_URL = '/auth';
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get(`${API_URL}/usuarios-json`);
+      const res = await api.get(`${API_URL}/usuarios-json`);
       setUsers(res.data);
     } catch (err) {
       console.error('Error al cargar usuarios', err);
@@ -24,7 +24,7 @@ const UserManagementPage = () => {
 
   const ejecutarBusqueda = async (criterio) => {
     try {
-      const res = await axios.get(`${API_URL}/buscar?q=${criterio}`);
+      const res = await api.get(`${API_URL}/buscar?q=${criterio}`);
       setUsers(res.data);
     } catch (err) {
       console.error('Error en la búsqueda', err);
@@ -63,10 +63,10 @@ const UserManagementPage = () => {
 
     try {
       if (editingId) {
-        await axios.put(`${API_URL}/update-user/${editingId}`, payload);
+        await api.put(`${API_URL}/update-user/${editingId}`, payload);
         alert('✅ Usuario actualizado con éxito');
       } else {
-        await axios.post(`${API_URL}/register`, payload);
+        await api.post(`${API_URL}/register`, payload);
         alert('✨ Nuevo integrante registrado en AgroMag');
       }
       cancelEdit();
@@ -81,7 +81,7 @@ const UserManagementPage = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('¿Deseas eliminar a este trabajador?')) return;
     try {
-      await axios.delete(`${API_URL}/delete-user/${id}`);
+      await api.delete(`${API_URL}/delete-user/${id}`);
       fetchUsers();
     } catch (err) {
       alert('No se pudo eliminar.');
@@ -90,7 +90,7 @@ const UserManagementPage = () => {
 
   const handleToggleActive = async (id, active) => {
     try {
-      await axios.patch(`${API_URL}/users/${id}/active`, active);
+      await api.patch(`${API_URL}/users/${id}/active`, active);
       fetchUsers();
     } catch (err) {
       alert('No se pudo actualizar el estado del usuario.');

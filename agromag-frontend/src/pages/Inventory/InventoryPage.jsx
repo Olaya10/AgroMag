@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { motion } from 'framer-motion';
 import { DashboardCard } from '../../componets/DashboardComponents';
 import { Package, AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react';
@@ -16,11 +16,11 @@ const InventoryPage = () => {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const API_URL = 'http://localhost:9000/api/inventory/bodega/insumos';
+  const API_URL = '/inventory/bodega/insumos';
 
   const fetchInsumos = async () => {
     try {
-      const res = await axios.get(API_URL);
+      const res = await api.get(API_URL);
       setInsumos(res.data);
     } catch (err) {
       console.error('Error al cargar la bodega', err);
@@ -47,10 +47,10 @@ const InventoryPage = () => {
     setLoading(true);
     try {
       if (editingId) {
-        await axios.put(`${API_URL}/${editingId}`, formData);
+        await api.put(`${API_URL}/${editingId}`, formData);
         alert('📦 Insumo actualizado con éxito');
       } else {
-        await axios.post(API_URL, formData);
+        await api.post(API_URL, formData);
         alert('📦 Producto registrado en el inventario');
       }
       resetForm();
@@ -77,7 +77,7 @@ const InventoryPage = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('¿Eliminar este insumo?')) return;
     try {
-      await axios.delete(`${API_URL}/${id}`);
+      await api.delete(`${API_URL}/${id}`);
       fetchInsumos();
     } catch (err) {
       alert('❌ No se pudo eliminar el insumo.');

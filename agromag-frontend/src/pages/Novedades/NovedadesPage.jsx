@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { DashboardCard } from '../../componets/DashboardComponents';
 import { ImagePlus } from 'lucide-react';
 
@@ -14,7 +14,7 @@ const NovedadesPage = () => {
 
   const fetchFincas = async () => {
     try {
-      const res = await axios.get('http://localhost:9000/api/fincas');
+      const res = await api.get('/fincas');
       setFincas(res.data);
     } catch (err) {
       console.error('Error al cargar fincas', err);
@@ -23,7 +23,7 @@ const NovedadesPage = () => {
 
   const fetchLotes = async () => {
     try {
-      const res = await axios.get('http://localhost:9000/api/lotes');
+      const res = await api.get('/lotes');
       setLotes(res.data);
     } catch (err) {
       console.error('Error al cargar lotes', err);
@@ -41,7 +41,7 @@ const NovedadesPage = () => {
       return;
     }
     try {
-      const res = await axios.get(`http://localhost:9000/api/novedades/lote/${loteId}`);
+      const res = await api.get(`/novedades/lote/${loteId}`);
       setNovedades(res.data);
     } catch (err) {
       console.error('Error al cargar eventos del lote', err);
@@ -54,7 +54,7 @@ const NovedadesPage = () => {
       const allNov = [];
       for (const lote of lotes) {
         try {
-          const res = await axios.get(`http://localhost:9000/api/novedades/lote/${lote.id}`);
+          const res = await api.get(`/novedades/lote/${lote.id}`);
           allNov.push(...res.data);
         } catch (err) {
           console.warn(`No se pudieron cargar novedades del lote ${lote.id}`);
@@ -103,7 +103,7 @@ const NovedadesPage = () => {
     }
     setActionLoading(true);
     try {
-      await axios.post('http://localhost:9000/api/novedades', {
+      await api.post('/novedades', {
         titulo: novedadData.titulo,
         descripcion: novedadData.descripcion,
         fotoUrl: novedadData.fotoUrl,

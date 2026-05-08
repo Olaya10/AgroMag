@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Lock, Mail, Leaf, AlertCircle, UserPlus, ShieldCheck } from 'lucide-react';
 
@@ -15,7 +15,7 @@ const LoginPage = ({ onLoginSuccess, onBack }) => {
         setLoading(true);
         setError('');
         try {
-            const res = await axios.post('http://localhost:9000/api/auth/login', loginData);
+            const res = await api.post('/auth/login', loginData);
             onLoginSuccess(res.data);
         } catch (err) {
             setError('Credenciales incorrectas. Intenta de nuevo.');
@@ -30,13 +30,13 @@ const LoginPage = ({ onLoginSuccess, onBack }) => {
         setError('');
 
         try {
-            await axios.post('http://localhost:9000/api/auth/register', {
+            await api.post('/auth/register', {
                 ...registerData,
                 role: 'OPERARIO',
                 active: true,
             });
 
-            const loginRes = await axios.post('http://localhost:9000/api/auth/login', {
+            const loginRes = await api.post('/auth/login', {
                 email: registerData.email,
                 password: registerData.password,
             });
