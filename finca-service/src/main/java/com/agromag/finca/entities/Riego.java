@@ -26,4 +26,11 @@ public class Riego {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Lote lote;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "cultivo_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "imagen"})
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Cultivo cultivo;
 }

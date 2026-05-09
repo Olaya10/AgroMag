@@ -3,8 +3,10 @@ package com.agromag.inventory.controllers;
 import com.agromag.inventory.entities.Insumo;
 import com.agromag.inventory.entities.Aplicacion;
 import com.agromag.inventory.repositories.InsumoRepository;
+import com.agromag.inventory.repositories.AplicacionRepository;
 import com.agromag.inventory.services.InsumoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,6 +17,9 @@ public class InventoryController {
 
     @Autowired
     private InsumoRepository insumoRepository;
+
+    @Autowired
+    private AplicacionRepository aplicacionRepository;
 
     @Autowired
     private InsumoService insumoService;
@@ -37,6 +42,36 @@ public class InventoryController {
     @GetMapping("/aplicaciones")
     public List<Aplicacion> listarAplicaciones() {
         return insumoService.listarAplicaciones();
+    }
+
+    @PutMapping("/aplicaciones/{id}")
+    public ResponseEntity<?> actualizarAplicacion(@PathVariable Long id, @RequestBody Aplicacion aplicacionDetalles) {
+        try {
+            Aplicacion existing = aplicacionRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Aplicación no encontrada"));
+
+            existing.setLoteId(aplicacionDetalles.getLoteId());
+            existing.setOperarioId(aplicacionDetalles.getOperarioId());
+            existing.setDosis(aplicacionDetalles.getDosis());
+            existing.setFecha(aplicacionDetalles.getFecha());
+            if (aplicacionDetalles.getInsumo() != null) {
+                existing.setInsumo(aplicacionDetalles.getInsumo());
+            }
+
+            return ResponseEntity.ok(aplicacionRepository.save(existing));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error al actualizar la aplicación: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/aplicaciones/{id}")
+    public ResponseEntity<?> eliminarAplicacion(@PathVariable Long id) {
+        try {
+            aplicacionRepository.deleteById(id);
+            return ResponseEntity.ok("Aplicación eliminada correctamente");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error al eliminar la aplicación: " + e.getMessage());
+        }
     }
 
     @PutMapping("/insumos/{id}")

@@ -4,3 +4,14 @@ server:
 spring:
   application:
     name: gateway-service
+  cloud:
+    gateway:
+      httpclient:
+        response-timeout: 30s
+        connect-timeout: 5000
+      default-filters:
+        - name: RequestSize
+          args:
+            maxSize: 15MB
+  codec:
+    max-in-memory-size: 15MB

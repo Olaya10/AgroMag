@@ -88,7 +88,7 @@ const OperationsPage = ({ currentUser }) => {
 
   const fetchUsuarios = async () => {
     try {
-      const res = await api.get('/auth/users');
+      const res = await api.get('/auth/usuarios-json');
       setUsuarios(res.data);
     } catch (err) {
       console.warn('Error al cargar usuarios', err);

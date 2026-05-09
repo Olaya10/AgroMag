@@ -42,6 +42,8 @@ public class RiegoController {
             riego.setCantidadAguaLitros(riegoDetalles.getCantidadAguaLitros());
             riego.setFechaHora(riegoDetalles.getFechaHora());
             riego.setObservaciones(riegoDetalles.getObservaciones());
+            riego.setLote(riegoDetalles.getLote());
+            riego.setCultivo(riegoDetalles.getCultivo());
             
             return ResponseEntity.ok(riegoService.registrar(riego));
         } catch (Exception e) {

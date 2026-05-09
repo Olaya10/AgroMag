@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../../api';
 import { DashboardCard } from '../../componets/DashboardComponents';
 import { ImagePlus } from 'lucide-react';
@@ -42,51 +42,47 @@ const NovedadesPage = () => {
     }
     try {
       const res = await api.get(`/novedades/lote/${loteId}`);
-      setNovedades(res.data);
+      setNovedades(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Error al cargar eventos del lote', err);
       setNovedades([]);
     }
   };
 
-  const fetchAllNovedades = async () => {
+  const fetchAllNovedades = useCallback(async () => {
     try {
-      const allNov = [];
-      for (const lote of lotes) {
-        try {
-          const res = await api.get(`/novedades/lote/${lote.id}`);
-          allNov.push(...res.data);
-        } catch (err) {
-          console.warn(`No se pudieron cargar novedades del lote ${lote.id}`);
-        }
-      }
-      setAllNovedades(allNov);
+      const res = await api.get('/novedades');
+      setAllNovedades(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Error al cargar todas las novedades', err);
+      setAllNovedades([]);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchFincas();
     fetchLotes();
     fetchAllNovedades();
-  }, []);
-
-  useEffect(() => {
-    if (lotes.length > 0) {
-      fetchAllNovedades();
-    }
-  }, [lotes]);
+  }, [fetchAllNovedades]);
 
   useEffect(() => {
     if (novedadData.loteId) {
       fetchNovedadesForLote(novedadData.loteId);
+    } else {
+      setNovedades([]);
     }
   }, [novedadData.loteId]);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Limit file size to 10MB to avoid Gateway payload issues
+    if (file.size > 10 * 1024 * 1024) {
+      alert('⚠️ La imagen es demasiado grande. El límite es 10MB.');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onloadend = () => {
       setNovedadData((prev) => ({ ...prev, fotoUrl: reader.result }));
@@ -102,21 +98,23 @@ const NovedadesPage = () => {
       return;
     }
     setActionLoading(true);
+    const savedLoteId = novedadData.loteId;
     try {
       await api.post('/novedades', {
         titulo: novedadData.titulo,
         descripcion: novedadData.descripcion,
-        fotoUrl: novedadData.fotoUrl,
+        fotoUrl: novedadData.fotoUrl || null,
         lote: { id: Number(novedadData.loteId) }
       });
       alert('Novedad registrada correctamente');
       setNovedadData({ fincaId: '', loteId: '', titulo: '', descripcion: '', fotoUrl: '' });
       setNovedadUploadLabel('Adjunta foto (opcional)');
-      fetchNovedadesForLote(novedadData.loteId);
+      fetchNovedadesForLote(savedLoteId);
       fetchAllNovedades();
     } catch (error) {
       console.error('Error al registrar la novedad', error);
-      alert('❌ Error al registrar la novedad');
+      const msg = error.response?.data || 'Error desconocido al registrar la novedad';
+      alert(`❌ ${typeof msg === 'string' ? msg : 'Error al registrar la novedad'}`);
     } finally {
       setActionLoading(false);
     }
@@ -200,7 +198,7 @@ const NovedadesPage = () => {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="font-semibold text-slate-900">{evento.titulo}</p>
-                    <p className="text-xs text-slate-500">{new Date(evento.fecha).toLocaleString()}</p>
+                    <p className="text-xs text-slate-500">{evento.fecha ? new Date(evento.fecha).toLocaleString() : 'Sin fecha'}</p>
                   </div>
                   {evento.fotoUrl && (
                     <img src={evento.fotoUrl} alt="Foto de novedad" className="h-16 w-16 rounded-2xl object-cover" />
@@ -225,7 +223,7 @@ const NovedadesPage = () => {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <p className="font-semibold text-slate-900">{evento.titulo}</p>
-                      <p className="text-xs text-slate-500">{new Date(evento.fecha).toLocaleString()}</p>
+                      <p className="text-xs text-slate-500">{evento.fecha ? new Date(evento.fecha).toLocaleString() : 'Sin fecha'}</p>
                       <p className="mt-2 text-xs font-medium text-slate-700">
                         📍 {loteInfo?.finca?.nombre || 'Finca desconocida'} — {loteInfo?.nombre || 'Lote desconocido'}
                       </p>
