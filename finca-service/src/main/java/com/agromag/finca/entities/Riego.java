@@ -3,6 +3,8 @@ package com.agromag.finca.entities;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import java.time.LocalDateTime;
 
 @Entity
@@ -18,8 +20,10 @@ public class Riego {
     private Double cantidadAguaLitros;
     private String observaciones;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "lote_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "finca", "cultivo", "riegos"})
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "imagen", "finca", "cultivo"})
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Lote lote;
 }

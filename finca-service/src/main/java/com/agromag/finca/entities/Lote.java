@@ -1,9 +1,12 @@
 package com.agromag.finca.entities;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,10 +32,16 @@ public class Lote {
     
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "finca_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "imagen"})
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Finca finca;
     
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "cultivo_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "imagen"})
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Cultivo cultivo;
     
     private LocalDateTime fechaCreacion;

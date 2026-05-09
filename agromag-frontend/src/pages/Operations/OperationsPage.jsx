@@ -82,7 +82,7 @@ const OperationsPage = ({ currentUser }) => {
     setActionLoading(true);
     try {
       await api.post('/riegos', {
-        fechaHora: riegoData.fechaHora || new Date().toISOString(),
+        fechaHora: riegoData.fechaHora || new Date().toISOString().slice(0, 19),
         cantidadAguaLitros: Number(riegoData.cantidadAguaLitros),
         observaciones: riegoData.observaciones,
         lote: { id: Number(riegoData.loteId) }
@@ -132,7 +132,7 @@ const OperationsPage = ({ currentUser }) => {
         operarioId: currentUser?.id,
         dosis: Number(aplicacionData.dosis),
         insumo: { id: Number(aplicacionData.insumoId) },
-        fecha: aplicacionData.fecha || new Date().toISOString()
+        fecha: aplicacionData.fecha || new Date().toISOString().slice(0, 19)
       });
       alert('🌱 Aplicación de insumo registrada');
       setAplicacionData({ fincaId: '', loteId: '', insumoId: '', dosis: '', fecha: '' });

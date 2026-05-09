@@ -16,25 +16,39 @@ public class RiegoController {
     private RiegoService riegoService;
 
     @PostMapping
-    public Riego registrarRiego(@RequestBody Riego riego) {
-        return riegoService.registrar(riego);
+    public ResponseEntity<?> registrarRiego(@RequestBody Riego riego) {
+        try {
+            return ResponseEntity.ok(riegoService.registrar(riego));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error al registrar el riego: " + e.getMessage());
+        }
     }
 
     @GetMapping
-    public List<Riego> listarHistorial() {
-        return riegoService.listarPorLote(null);
+    public ResponseEntity<?> listarHistorial() {
+        try {
+            List<Riego> riegos = riegoService.listarPorLote(null);
+            return ResponseEntity.ok(riegos);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al listar riegos: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public Riego actualizarRiego(@PathVariable Long id, @RequestBody Riego riegoDetalles) {
-        Riego riego = riegoService.buscarPorId(id); 
-        
-        riego.setCantidadAguaLitros(riegoDetalles.getCantidadAguaLitros());
-        riego.setFechaHora(riegoDetalles.getFechaHora());
-        riego.setObservaciones(riegoDetalles.getObservaciones());
-        
-        return riegoService.registrar(riego);
+    public ResponseEntity<?> actualizarRiego(@PathVariable Long id, @RequestBody Riego riegoDetalles) {
+        try {
+            Riego riego = riegoService.buscarPorId(id); 
+            
+            riego.setCantidadAguaLitros(riegoDetalles.getCantidadAguaLitros());
+            riego.setFechaHora(riegoDetalles.getFechaHora());
+            riego.setObservaciones(riegoDetalles.getObservaciones());
+            
+            return ResponseEntity.ok(riegoService.registrar(riego));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error al actualizar el riego: " + e.getMessage());
+        }
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminarRiego(@PathVariable Long id) {
         try {

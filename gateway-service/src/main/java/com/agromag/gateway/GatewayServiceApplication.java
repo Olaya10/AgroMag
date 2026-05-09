@@ -48,6 +48,7 @@ public class GatewayServiceApplication {
 		corsConfig.setMaxAge(3600L);
 		corsConfig.addAllowedMethod("*");
 		corsConfig.addAllowedHeader("*");
+		corsConfig.addExposedHeader("x-auth-token");
 		corsConfig.setAllowCredentials(true);
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
