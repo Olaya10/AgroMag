@@ -15,6 +15,7 @@ const InventoryPage = () => {
   });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [hasAlerted, setHasAlerted] = useState(false);
 
   const API_URL = '/inventory/bodega/insumos';
 
@@ -30,6 +31,16 @@ const InventoryPage = () => {
   useEffect(() => {
     fetchInsumos();
   }, []);
+
+  useEffect(() => {
+    const critical = insumos.filter((i) => Number(i.stockActual) <= Number(i.umbralCritico));
+    if (critical.length > 0 && !hasAlerted) {
+      setTimeout(() => {
+        alert(`⚠️ ALERTA PROACTIVA DE INVENTARIO:\nTienes ${critical.length} insumo(s) con stock bajo o crítico. Por favor, revisa la lista y reabastece pronto.`);
+        setHasAlerted(true);
+      }, 500);
+    }
+  }, [insumos, hasAlerted]);
 
   const resetForm = () => {
     setEditingId(null);

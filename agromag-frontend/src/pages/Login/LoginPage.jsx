@@ -98,15 +98,15 @@ const LoginPage = ({ onLoginSuccess, onBack }) => {
                             AgroMag
                         </h1>
                         <p className="text-slate-600 font-light">
-                            Bienvenido de nuevo
+                            {registerMode ? 'Crea tu cuenta' : 'Bienvenido de nuevo'}
                         </p>
                         <p className="text-sm text-slate-500 mt-1">
-                            Ingresa para administrar tu finca
+                            {registerMode ? 'Regístrate para acceder al sistema' : 'Ingresa para administrar tu finca'}
                         </p>
                     </div>
 
                     {/* Formulario */}
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={registerMode ? handleRegisterSubmit : handleSubmit} className="space-y-4">
                         {/* Error message */}
                         {error && (
                             <motion.div
@@ -117,6 +117,62 @@ const LoginPage = ({ onLoginSuccess, onBack }) => {
                                 <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                                 <p className="text-sm text-red-700">{error}</p>
                             </motion.div>
+                        )}
+
+                        {registerMode && (
+                            <>
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.1 }}
+                                    className="relative"
+                                >
+                                    <div className="absolute left-4 top-3.5 text-slate-400">
+                                        <UserPlus className="w-5 h-5" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Nombre completo"
+                                        value={registerData.name}
+                                        onChange={e => setRegisterData({ ...registerData, name: e.target.value })}
+                                        required
+                                        className="input-field pl-12"
+                                    />
+                                </motion.div>
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="relative"
+                                >
+                                    <div className="absolute left-4 top-3.5 text-slate-400">
+                                        <ShieldCheck className="w-5 h-5" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Cédula"
+                                        value={registerData.cedula}
+                                        onChange={e => setRegisterData({ ...registerData, cedula: e.target.value })}
+                                        required
+                                        className="input-field pl-12"
+                                    />
+                                </motion.div>
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.25 }}
+                                    className="relative"
+                                >
+                                    <input
+                                        type="number"
+                                        placeholder="Edad"
+                                        value={registerData.edad}
+                                        onChange={e => setRegisterData({ ...registerData, edad: e.target.value })}
+                                        required
+                                        className="input-field pl-4"
+                                    />
+                                </motion.div>
+                            </>
                         )}
 
                         {/* Email input */}
@@ -132,8 +188,10 @@ const LoginPage = ({ onLoginSuccess, onBack }) => {
                             <input
                                 type="email"
                                 placeholder="Correo electrónico"
-                                value={loginData.email}
-                                onChange={e => setLoginData({ ...loginData, email: e.target.value })}
+                                value={registerMode ? registerData.email : loginData.email}
+                                onChange={e => registerMode 
+                                    ? setRegisterData({ ...registerData, email: e.target.value }) 
+                                    : setLoginData({ ...loginData, email: e.target.value })}
                                 required
                                 className="input-field pl-12"
                             />
@@ -152,8 +210,10 @@ const LoginPage = ({ onLoginSuccess, onBack }) => {
                             <input
                                 type="password"
                                 placeholder="Contraseña"
-                                value={loginData.password}
-                                onChange={e => setLoginData({ ...loginData, password: e.target.value })}
+                                value={registerMode ? registerData.password : loginData.password}
+                                onChange={e => registerMode 
+                                    ? setRegisterData({ ...registerData, password: e.target.value }) 
+                                    : setLoginData({ ...loginData, password: e.target.value })}
                                 required
                                 className="input-field pl-12"
                             />
@@ -181,9 +241,22 @@ const LoginPage = ({ onLoginSuccess, onBack }) => {
                                     Cargando...
                                 </span>
                             ) : (
-                                'Entrar al Sistema'
+                                registerMode ? 'Registrarse' : 'Entrar al Sistema'
                             )}
                         </motion.button>
+                        
+                        <div className="text-center mt-4">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setRegisterMode(!registerMode);
+                                    setError('');
+                                }}
+                                className="text-sm font-medium text-agro-emerald hover:text-green-700 transition"
+                            >
+                                {registerMode ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
+                            </button>
+                        </div>
                     </form>
 
                     {/* Footer text */}

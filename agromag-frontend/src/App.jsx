@@ -8,12 +8,14 @@ import FincaManagementPage from './pages/Finca/FincaManagementPage';
 import InventoryPage from './pages/Inventory/InventoryPage';
 import OperationsPage from './pages/Operations/OperationsPage';
 import ReportsPage from './pages/Reports/ReportsPage';
+import NovedadesPage from './pages/Novedades/NovedadesPage';
 
 const sidebarItems = [
   { key: 'usuarios', label: 'Usuarios', roles: ['ADMIN'] },
   { key: 'finca', label: 'Gestión de Finca', roles: ['ADMIN', 'PRODUCTOR'] },
   { key: 'insumos', label: 'Insumos', roles: ['ADMIN', 'PRODUCTOR'] },
   { key: 'operaciones', label: 'Operaciones', roles: ['ADMIN', 'PRODUCTOR', 'OPERARIO'] },
+  { key: 'novedades', label: 'Eventos Imprevistos', roles: ['ADMIN', 'PRODUCTOR', 'OPERARIO'] },
   { key: 'reportes', label: 'Reportes', roles: ['ADMIN', 'PRODUCTOR'] }
 ];
 
@@ -93,6 +95,7 @@ function App() {
       finca: 'Gestión de Finca',
       insumos: 'Inventario de Insumos',
       operaciones: 'Operaciones',
+      novedades: 'Eventos Imprevistos',
       reportes: 'Reportes y Análisis'
     };
     return titles[view] || 'Panel de Control';
@@ -108,6 +111,8 @@ function App() {
         return <InventoryPage />;
       case 'operaciones':
         return <OperationsPage currentUser={currentUser} />;
+      case 'novedades':
+        return <NovedadesPage />;
       case 'reportes':
         return <ReportsPage />;
       default:
