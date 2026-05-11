@@ -47,18 +47,7 @@ public class InventoryController {
     @PutMapping("/aplicaciones/{id}")
     public ResponseEntity<?> actualizarAplicacion(@PathVariable Long id, @RequestBody Aplicacion aplicacionDetalles) {
         try {
-            Aplicacion existing = aplicacionRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Aplicación no encontrada"));
-
-            existing.setLoteId(aplicacionDetalles.getLoteId());
-            existing.setOperarioId(aplicacionDetalles.getOperarioId());
-            existing.setDosis(aplicacionDetalles.getDosis());
-            existing.setFecha(aplicacionDetalles.getFecha());
-            if (aplicacionDetalles.getInsumo() != null) {
-                existing.setInsumo(aplicacionDetalles.getInsumo());
-            }
-
-            return ResponseEntity.ok(aplicacionRepository.save(existing));
+            return ResponseEntity.ok(insumoService.actualizarAplicacion(id, aplicacionDetalles));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error al actualizar la aplicación: " + e.getMessage());
         }
@@ -67,8 +56,8 @@ public class InventoryController {
     @DeleteMapping("/aplicaciones/{id}")
     public ResponseEntity<?> eliminarAplicacion(@PathVariable Long id) {
         try {
-            aplicacionRepository.deleteById(id);
-            return ResponseEntity.ok("Aplicación eliminada correctamente");
+            insumoService.eliminarAplicacion(id);
+            return ResponseEntity.ok("Aplicación eliminada correctamente y stock devuelto a bodega");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error al eliminar la aplicación: " + e.getMessage());
         }
