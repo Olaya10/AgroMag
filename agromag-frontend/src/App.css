@@ -1,0 +1,240 @@
+/* App.css - Estilos deprecated, usar Tailwind CSS en su lugar */
+/* Los estilos CSS antiguos han sido migrados a Tailwind CSS */
+
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f4f7f2;
+  color: #203127;
+}
+
+button {
+  transition: opacity 0.2s;
+}
+
+button:hover {
+  opacity: 0.9;
+  cursor: pointer;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #172b19;
+  color: #f5f6f4;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 18px;
+  gap: 24px;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-icon {
+  width: 225px;
+  height: 70px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  font-size: 20px;
+  object-fit: cover;
+}
+
+.sidebar-brand h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.sidebar-brand p {
+  margin: 3px 0 0;
+  color: #c8d6c5;
+  font-size: 0.95rem;
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-label {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.8rem;
+  color: #9bb593;
+}
+
+.sidebar-item {
+  padding: 14px 16px;
+  background: transparent;
+  color: #e7f1e5;
+  border: none;
+  text-align: left;
+  border-radius: 12px;
+  font-size: 0.98rem;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.sidebar-item:hover,
+.sidebar-item.active {
+  background: rgba(46, 125, 50, 0.18);
+  transform: translateX(4px);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 18px;
+  background: #1f361f;
+  border-radius: 18px;
+}
+
+.sidebar-footer-title {
+  display: block;
+  font-size: 0.75rem;
+  color: #a6b59a;
+  margin-bottom: 10px;
+}
+
+.sidebar-footer strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.sidebar-footer-role {
+  display: block;
+  color: #c2d0ba;
+  font-size: 0.88rem;
+}
+
+.main-content {
+  padding: 28px 32px;
+  background: #f4f7f2;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 26px;
+}
+
+.eyebrow {
+  color: #51714f;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+}
+
+.topbar h2 {
+  margin: 0;
+  font-size: 1.9rem;
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: white;
+  border-radius: 16px;
+  padding: 12px 16px;
+  box-shadow: 0 10px 30px rgba(22, 50, 28, 0.08);
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #2e7d32;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+}
+
+.profile-card span {
+  display: block;
+  font-weight: 700;
+}
+
+.profile-card small {
+  color: #637a66;
+  display: block;
+  margin-top: 2px;
+}
+
+.logout-button {
+  background: #f1f8e9;
+  color: #2e7d32;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-weight: 700;
+}
+
+.content-area {
+  min-height: calc(100vh - 124px);
+}
+
+.empty-view {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 15px 40px rgba(22, 50, 28, 0.08);
+  text-align: center;
+  color: #5a6e5a;
+}
+
+@media (max-width: 1080px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .sidebar-brand,
+  .sidebar-footer,
+  .sidebar-section {
+    width: 100%;
+  }
+
+  .sidebar-footer {
+    margin-top: 12px;
+  }
+
+  .main-content {
+    padding: 20px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .topbar-actions {
+    justify-content: space-between;
+  }
+}

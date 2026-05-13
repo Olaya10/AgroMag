@@ -1,0 +1,153 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Variables CSS para el tema Haverts Moss */
+:root {
+  --color-base: #EFEFE3;
+  --color-primary: #3B755E;
+  --color-secondary: #85B48A;
+  --color-accent: #D8D174;
+  --color-contrast: #C4A54A;
+  
+  --color-forest: #3B755E;
+  --color-emerald: #85B48A;
+  --color-light: #EFEFE3;
+  --color-soft: #85B48A;
+}
+
+/* Reset y estilos base */
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  body {
+    @apply bg-haverts-base text-haverts-primary font-sans antialiased;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-[-0.02em];
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  /* Efecto de ruido sutil en el fondo */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' result='noise' /%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noiseFilter)' opacity='0.015'/%3E%3C/svg%3E");
+    background-size: 100px 100px;
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+/* Componentes reutilizables */
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 rounded-xl font-semibold text-haverts-base bg-haverts-primary hover:bg-haverts-primary/90 transition-all duration-300 shadow-soft hover:shadow-medium active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 rounded-xl font-semibold text-haverts-primary bg-haverts-secondary/20 hover:bg-haverts-secondary/30 border border-haverts-secondary/30 transition-all duration-300 shadow-soft;
+  }
+
+  .btn-cta {
+    @apply px-6 py-3 rounded-xl font-bold text-haverts-base bg-haverts-contrast hover:bg-haverts-contrast/90 transition-all duration-300 shadow-soft hover:shadow-medium active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 rounded-lg font-medium text-haverts-primary/70 hover:text-haverts-primary hover:bg-haverts-secondary/10 transition-all duration-300;
+  }
+
+  .card {
+    @apply bg-white/80 rounded-2xl border border-haverts-secondary/20 shadow-soft hover:shadow-medium transition-all duration-300;
+  }
+
+  .card-premium {
+    @apply bg-haverts-secondary/10 backdrop-blur-sm rounded-2xl border border-haverts-secondary/20 shadow-soft hover:shadow-medium transition-all duration-300;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border border-haverts-secondary/30 focus:border-haverts-primary focus:outline-none focus:ring-2 focus:ring-haverts-primary/10 transition-all duration-300 bg-white/50;
+  }
+
+  .section-title {
+    @apply text-4xl md:text-5xl font-display font-bold text-haverts-primary tracking-[-0.02em];
+  }
+
+  .section-subtitle {
+    @apply text-lg md:text-xl text-haverts-primary/70 font-light;
+  }
+
+  .badge {
+    @apply inline-block px-3 py-1 rounded-full text-sm font-semibold text-haverts-primary bg-haverts-secondary/30;
+  }
+  
+  .badge-accent {
+    @apply inline-block px-3 py-1 rounded-full text-sm font-semibold text-haverts-primary bg-haverts-accent;
+  }
+}
+
+/* Animaciones suaves */
+@layer utilities {
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  .animate-glow-pulse {
+    animation: glowPulse 2s ease-in-out infinite;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-secondary);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/* Efecto de selección de texto */
+::selection {
+  background-color: var(--color-primary);
+  color: var(--color-base);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea,
+select {
+  @apply input-field;
+}
