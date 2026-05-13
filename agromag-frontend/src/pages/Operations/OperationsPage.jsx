@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
 import { motion as Motion } from 'framer-motion';
-import { DashboardCard } from '../../componets/DashboardComponents';
+import { DashboardCard } from '../../components/DashboardComponents';
 import { Droplet, FlaskConical, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
 
 const OperationsPage = ({ currentUser }) => {

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Navbar, FeatureCard, GlowButton, ScrollReveal, Footer } from '../../componets/BaseComponents';
+import { Navbar, FeatureCard, GlowButton, ScrollReveal, Footer } from '../../components/BaseComponents';
 import { 
   Leaf, 
   BarChart3, 

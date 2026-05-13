@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { DashboardLayout } from './componets/DashboardComponents';
+import { DashboardLayout } from './components/DashboardComponents';
 import HomePage from './pages/Home/HomePage';
 import LoginPage from './pages/Login/LoginPage';
 import UserManagementPage from './pages/UserManagement/UserManagementPage';

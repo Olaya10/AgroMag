@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../../api';
-import { DashboardCard } from '../../componets/DashboardComponents';
+import { DashboardCard } from '../../components/DashboardComponents';
 import { ImagePlus, MapPin, Calendar } from 'lucide-react';
 
 /**

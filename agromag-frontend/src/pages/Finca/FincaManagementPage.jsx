@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { DashboardCard } from '../../componets/DashboardComponents';
+import { DashboardCard } from '../../components/DashboardComponents';
 import FincaManagement from './FincaManagement';
 import CultivoManagementPage from '../Cultivos/CultivoManagementPage';
 import LoteManagementPage from '../Lote/LoteManagementPage';

@@ -1,34 +1,41 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
-import { motion } from 'framer-motion';
-import { DashboardCard } from '../../componets/DashboardComponents';
-import { Leaf, Layers, Sparkles, ToggleLeft, ToggleRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+// Corregido: "componets" a "components"
+import { DashboardCard } from '../../components/DashboardComponents'; 
+// Corregido: Se eliminaron ToggleLeft y ToggleRight que no se usaban
+import { Leaf, Plus, Edit, Trash2, Search, X } from 'lucide-react';
 
 const CultivoManagementPage = () => {
   const [cultivos, setCultivos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
     diasCosecha: '',
-    temperapturOptima: '',
-    humidadOptima: '',
+    temperaturaOptima: '', // Corregido el typo
+    humedadOptima: '',     // Corregido el typo
     imagen: null,
     imagenPreview: null,
     activo: true
   });
   const [editingId, setEditingId] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const API_BASE_URL = '/cultivos';
   const API_URL = `${API_BASE_URL}/todos`;
 
   const fetchCultivos = async () => {
+    setLoading(true);
     try {
       const res = await api.get(API_URL);
       setCultivos(res.data);
     } catch (err) {
       console.error('Error al cargar cultivos', err);
-      alert('❌ Error al cargar cultivos');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,12 +45,13 @@ const CultivoManagementPage = () => {
 
   const resetForm = () => {
     setEditingId(null);
+    setShowForm(false);
     setFormData({
       nombre: '',
       descripcion: '',
       diasCosecha: '',
-      temperapturOptima: '',
-      humidadOptima: '',
+      temperaturaOptima: '', // Corregido
+      humedadOptima: '',     // Corregido
       imagen: null,
       imagenPreview: null,
       activo: true
@@ -67,38 +75,33 @@ const CultivoManagementPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.nombre.trim()) {
-      alert('❌ El nombre del cultivo es requerido');
-      return;
-    }
+    if (!formData.nombre.trim()) return;
 
-    setLoading(true);
+    setSaving(true);
     try {
       const payload = {
         nombre: formData.nombre,
         descripcion: formData.descripcion,
         diasCosecha: parseInt(formData.diasCosecha, 10) || null,
-        temperapturOptima: formData.temperapturOptima,
-        humidadOptima: formData.humidadOptima,
+        temperaturaOptima: formData.temperaturaOptima, // Corregido
+        humedadOptima: formData.humedadOptima,         // Corregido
         imagen: formData.imagen,
-        activo: true
+        activo: formData.activo
       };
 
       if (editingId) {
         await api.put(`${API_BASE_URL}/${editingId}`, payload);
-        alert('🌱 Cultivo actualizado correctamente');
       } else {
         await api.post(API_BASE_URL, payload);
-        alert('🌱 Cultivo registrado correctamente');
       }
 
       resetForm();
       fetchCultivos();
     } catch (err) {
       console.error(err);
-      alert('❌ Error al guardar cultivo: ' + (err.response?.data || err.message));
+      alert('❌ Error al guardar cultivo');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -108,13 +111,13 @@ const CultivoManagementPage = () => {
       nombre: cultivo.nombre,
       descripcion: cultivo.descripcion || '',
       diasCosecha: cultivo.diasCosecha ?? '',
-      temperapturOptima: cultivo.temperapturOptima || '',
-      humidadOptima: cultivo.humidadOptima || '',
+      temperaturaOptima: cultivo.temperaturaOptima || '', // Corregido
+      humedadOptima: cultivo.humedadOptima || '',         // Corregido
       imagen: cultivo.imagen || null,
       imagenPreview: cultivo.imagen || null,
       activo: cultivo.activo ?? true
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setShowForm(true);
   };
 
   const handleToggleActive = async (id) => {
@@ -133,204 +136,248 @@ const CultivoManagementPage = () => {
         fetchCultivos();
       } catch (error) {
         console.error('Error al eliminar cultivo:', error);
-        alert('❌ Error al eliminar cultivo: ' + (error.response?.data || error.message));
       }
     }
   };
 
+  const filteredCultivos = cultivos.filter(c => 
+    c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.descripcion && c.descripcion.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  if (loading && cultivos.length === 0) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-agro-emerald"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_1.3fr]">
-        <DashboardCard
-          title={editingId ? 'Editando cultivo' : 'Nuevo cultivo'}
-          subtitle="Registra y ajusta información de cada variedad"
-          action={
-            editingId && (
-              <button
-                onClick={resetForm}
-                className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
-              >
-                Cancelar editar
-              </button>
-            )
-          }
+      {/* Header & Search */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-agro-emerald/10 rounded-2xl text-agro-emerald">
+            <Leaf className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Catálogo de Cultivos</h2>
+            <p className="text-sm text-slate-500 font-medium">Gestiona las variedades vegetales de tu finca</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all duration-300 shadow-soft hover:shadow-medium ${
+            showForm ? 'bg-slate-100 text-slate-600' : 'bg-agro-emerald text-white shadow-agro-emerald/20'
+          }`}
         >
-          <form className="space-y-5" onSubmit={handleSubmit}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="text-sm text-slate-700">Nombre del cultivo</label>
-                <input
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-                  placeholder="Ej. Maíz"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-sm text-slate-700">Días hasta cosecha</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.diasCosecha}
-                  onChange={(e) => setFormData({ ...formData, diasCosecha: e.target.value })}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-                  placeholder="Ej. 120"
-                />
-              </div>
-            </div>
+          {showForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+          {showForm ? 'Cancelar' : 'Nuevo Cultivo'}
+        </button>
+      </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="text-sm text-slate-700">Temperatura óptima</label>
-                <input
-                  value={formData.temperapturOptima}
-                  onChange={(e) => setFormData({ ...formData, temperapturOptima: e.target.value })}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-                  placeholder="Ej. 18-24°C"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-slate-700">Humedad ideal</label>
-                <input
-                  value={formData.humidadOptima}
-                  onChange={(e) => setFormData({ ...formData, humidadOptima: e.target.value })}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-                  placeholder="Ej. 60%"
-                />
-              </div>
-            </div>
+      <div className="relative group max-w-2xl">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-agro-emerald transition-colors">
+          <Search className="w-5 h-5" />
+        </div>
+        <input
+          type="text"
+          placeholder="Buscar cultivos por nombre o descripción..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-12 pr-4 py-4 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl outline-none focus:border-agro-emerald focus:ring-4 focus:ring-agro-emerald/10 transition-all text-slate-700 font-medium shadow-sm"
+        />
+      </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="text-sm text-slate-700">Estado</label>
-                <select
-                  value={formData.activo}
-                  onChange={(e) => setFormData({ ...formData, activo: e.target.value === 'true' })}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-                >
-                  <option value={true}>Activo</option>
-                  <option value={false}>Inactivo</option>
-                </select>
-              </div>
-            </div>
+      {/* Form Section */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <DashboardCard
+              title={editingId ? 'Editar Variedad' : 'Registrar Nueva Variedad'}
+              subtitle="Completa los parámetros óptimos para el ciclo de vida del cultivo"
+              className="bg-white/90"
+            >
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Nombre Común</label>
+                    <input
+                      required
+                      value={formData.nombre}
+                      onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-agro-emerald transition-colors"
+                      placeholder="Ej. Café Arábica"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Ciclo (Días)</label>
+                    <input
+                      type="number"
+                      value={formData.diasCosecha}
+                      onChange={(e) => setFormData({ ...formData, diasCosecha: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-agro-emerald transition-colors"
+                      placeholder="120"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Estado Inicial</label>
+                    <select
+                      value={formData.activo}
+                      onChange={(e) => setFormData({ ...formData, activo: e.target.value === 'true' })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-agro-emerald transition-colors"
+                    >
+                      <option value={true}>Activo</option>
+                      <option value={false}>Inactivo</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Temperatura Óptima</label>
+                    <input
+                      value={formData.temperaturaOptima} // Corregido
+                      onChange={(e) => setFormData({ ...formData, temperaturaOptima: e.target.value })} // Corregido
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-agro-emerald transition-colors"
+                      placeholder="18°C - 24°C"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Humedad Ideal</label>
+                    <input
+                      value={formData.humedadOptima} // Corregido
+                      onChange={(e) => setFormData({ ...formData, humedadOptima: e.target.value })} // Corregido
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-agro-emerald transition-colors"
+                      placeholder="60% - 80%"
+                    />
+                  </div>
+                </div>
 
-            <label className="block text-sm text-slate-700">
-              Descripción
-              <textarea
-                value={formData.descripcion}
-                onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                className="mt-2 h-28 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-                placeholder="Notas sobre ciclo de cultivo y recomendaciones"
-              />
-            </label>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Descripción y Cuidados</label>
+                  <textarea
+                    value={formData.descripcion}
+                    onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-agro-emerald transition-colors resize-none"
+                    placeholder="Detalles sobre el suelo, riego y particularidades de la variedad..."
+                  />
+                </div>
 
-            <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-end">
-              <label className="block text-sm text-slate-700">
-                Imagen del cultivo
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="mt-2 block w-full cursor-pointer rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none"
-                />
-              </label>
-              <button
-                type="submit"
-                className="rounded-3xl bg-agro-emerald px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-agro-emerald/20 transition hover:bg-green-700"
-                disabled={loading}
-              >
-                {loading ? 'Guardando...' : editingId ? 'Actualizar cultivo' : 'Registrar cultivo'}
-              </button>
-            </div>
-
-            {formData.imagenPreview && (
-              <div className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
-                <img src={formData.imagenPreview} alt="Vista previa cultivo" className="h-56 w-full object-cover" />
-              </div>
-            )}
-          </form>
-        </DashboardCard>
-
-        <DashboardCard title="Cultivos registrados" subtitle="Visualiza y administra tus variedades activas">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-left text-sm text-slate-700">
-              <thead className="bg-slate-100 text-slate-700">
-                <tr>
-                  <th className="px-4 py-4 font-semibold">Imagen</th>
-                  <th className="px-4 py-4 font-semibold">Cultivo</th>
-                  <th className="px-4 py-4 font-semibold">Cosecha</th>
-                  <th className="px-4 py-4 font-semibold">Temperatura</th>
-                  <th className="px-4 py-4 font-semibold">Humedad</th>
-                  <th className="px-4 py-4 font-semibold">Estado</th>
-                  <th className="px-4 py-4 font-semibold">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 bg-white">
-                {cultivos.map((cultivo) => (
-                  <tr key={cultivo.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-4">
-                      {cultivo.imagen ? (
-                        <img src={cultivo.imagen} alt={cultivo.nombre} className="h-12 w-12 rounded-xl object-cover" />
+                <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-end">
+                  <div className="flex-1 w-full space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Imagen Representativa</label>
+                    <div className="flex items-center gap-4 p-4 bg-slate-50 border border-dashed border-slate-300 rounded-2xl transition-colors hover:bg-slate-100">
+                      {formData.imagenPreview ? (
+                        <img src={formData.imagenPreview} className="w-16 h-16 rounded-xl object-cover shadow-sm" alt="Preview" />
                       ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">
-                          Sin imagen
+                        <div className="w-16 h-16 rounded-xl bg-slate-200 flex items-center justify-center text-slate-400">
+                          <Leaf className="w-6 h-6" />
                         </div>
                       )}
-                    </td>
-                    <td className="px-4 py-4 font-semibold text-slate-900">{cultivo.nombre}</td>
-                    <td className="px-4 py-4">{cultivo.diasCosecha ?? '-'}</td>
-                    <td className="px-4 py-4">{cultivo.temperapturOptima || '-'}</td>
-                    <td className="px-4 py-4">{cultivo.humidadOptima || '-'}</td>
-                    <td className="px-4 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        cultivo.activo
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {cultivo.activo ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
+                      <input type="file" accept="image/*" onChange={handleImageChange} className="text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-agro-emerald file:text-white hover:file:bg-green-700 cursor-pointer" />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full sm:w-auto px-8 py-4 bg-agro-emerald text-white rounded-2xl font-bold shadow-lg shadow-agro-emerald/20 hover:shadow-xl transition-all disabled:opacity-50"
+                  >
+                    {saving ? 'Guardando...' : editingId ? 'Actualizar Cultivo' : 'Crear Cultivo'}
+                  </button>
+                </div>
+              </form>
+            </DashboardCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* List Section */}
+      <div className="bg-white rounded-[2rem] border border-slate-200 shadow-soft overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50/50 border-b border-slate-100">
+                <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Información</th>
+                <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Parámetros</th>
+                <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Estado</th>
+                <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredCultivos.map((cultivo) => (
+                <tr key={cultivo.id} className="group hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-4">
+                      {cultivo.imagen ? (
+                        <img src={cultivo.imagen} className="w-14 h-14 rounded-2xl object-cover shadow-sm group-hover:scale-105 transition-transform" alt={cultivo.nombre} />
+                      ) : (
+                        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-300">
+                          <Leaf className="w-6 h-6" />
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="font-bold text-slate-900 leading-tight">{cultivo.nombre}</h4>
+                        <p className="text-xs text-slate-500 mt-1 max-w-[200px] truncate">{cultivo.descripcion || 'Sin descripción'}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-5">
+                    <div className="flex flex-wrap gap-2">
+                      <span className="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-lg uppercase tracking-tighter">⏱️ {cultivo.diasCosecha || '?'} días</span>
+                      <span className="px-2 py-1 bg-orange-50 text-orange-600 text-[10px] font-bold rounded-lg uppercase tracking-tighter">🌡️ {cultivo.temperaturaOptima || '-'}</span> {/* Corregido */}
+                      <span className="px-2 py-1 bg-cyan-50 text-cyan-600 text-[10px] font-bold rounded-lg uppercase tracking-tighter">💧 {cultivo.humedadOptima || '-'}</span> {/* Corregido */}
+                    </div>
+                  </td>
+                  <td className="px-6 py-5 text-center">
+                    <button 
+                      onClick={() => handleToggleActive(cultivo.id)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all ${
+                        cultivo.activo 
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}
+                    >
+                      <div className={`w-1.5 h-1.5 rounded-full ${cultivo.activo ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`} />
+                      {cultivo.activo ? 'ACTIVO' : 'INACTIVO'}
+                    </button>
+                  </td>
+                  <td className="px-6 py-5">
+                    <div className="flex items-center justify-end gap-2">
                       <button
-                        type="button"
                         onClick={() => handleEdit(cultivo)}
-                        className="mr-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
+                        className="p-2 text-slate-400 hover:text-agro-emerald hover:bg-agro-emerald/10 rounded-xl transition-all"
+                        title="Editar"
                       >
-                        Editar
+                        <Edit className="w-5 h-5" />
                       </button>
                       <button
-                        type="button"
-                        onClick={() => handleToggleActive(cultivo.id)}
-                        className={`mr-2 rounded-2xl px-3 py-2 text-xs font-semibold transition ${
-                          cultivo.activo
-                            ? 'bg-orange-100 text-orange-600 hover:bg-orange-200'
-                            : 'bg-green-100 text-green-600 hover:bg-green-200'
-                        }`}
-                      >
-                        {cultivo.activo ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => handleDelete(cultivo.id)}
-                        className="rounded-2xl bg-rose-100 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-200"
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                        title="Eliminar"
                       >
-                        Eliminar
+                        <Trash2 className="w-5 h-5" />
                       </button>
-                    </td>
-                  </tr>
-                ))}
-                {cultivos.length === 0 && (
-                  <tr>
-                    <td colSpan="6" className="px-4 py-8 text-center text-slate-500">
-                      No hay cultivos registrados.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </DashboardCard>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filteredCultivos.length === 0 && (
+            <div className="py-20 text-center">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-200">
+                <Search className="w-10 h-10" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-400">No se encontraron cultivos</h3>
+              <p className="text-slate-400 text-sm">Intenta con otro término de búsqueda o registra uno nuevo.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

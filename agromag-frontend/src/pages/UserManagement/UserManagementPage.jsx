@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
 import { motion } from 'framer-motion';
-import { DashboardCard } from '../../componets/DashboardComponents';
+import { DashboardCard } from '../../components/DashboardComponents';
 import { Users, Search, UserPlus, Edit3, Trash2 } from 'lucide-react';
 
 const UserManagementPage = () => {

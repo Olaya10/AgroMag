@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import { motion } from 'framer-motion';
 import api from '../../api';
-import { DashboardCard } from '../../componets/DashboardComponents';
+import { DashboardCard } from '../../components/DashboardComponents';
 import { BarChart3, FileText, Download, Activity } from 'lucide-react';
 
 const ReportsPage = () => {

@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
-import { motion } from 'framer-motion';
-import { DashboardCard } from '../../componets/DashboardComponents';
-import { ImagePlus, Leaf, MapPin, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+// Corregido: "componets" a "components"
+import { DashboardCard } from '../../components/DashboardComponents'; 
+import { ImagePlus, MapPin, Plus, Edit, Trash2, Search, X, Layers, Leaf } from 'lucide-react';
 
 const LoteManagementPage = ({ refreshFincas }) => {
   const [lotes, setLotes] = useState([]);
   const [cultivos, setCultivos] = useState([]);
   const [fincas, setFincas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     nombre: '',
     finca: '',
@@ -20,50 +24,37 @@ const LoteManagementPage = ({ refreshFincas }) => {
     imagenPreview: null
   });
   const [editingId, setEditingId] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const API_URL = '/lotes';
   const CULTIVOS_URL = '/cultivos';
   const FINCAS_URL = '/fincas/active';
 
-  const fetchLotes = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const res = await api.get(API_URL);
-      setLotes(res.data);
+      const [lotesRes, cultivosRes, fincasRes] = await Promise.all([
+        api.get(API_URL),
+        api.get(CULTIVOS_URL),
+        api.get(FINCAS_URL)
+      ]);
+      setLotes(lotesRes.data);
+      setCultivos(cultivosRes.data);
+      setFincas(fincasRes.data);
     } catch (err) {
-      console.error('Error al cargar lotes', err);
-      alert('❌ Error al cargar lotes');
-    }
-  };
-
-  const fetchCultivos = async () => {
-    try {
-      const res = await api.get(CULTIVOS_URL);
-      setCultivos(res.data);
-    } catch (err) {
-      console.error('Error al cargar cultivos', err);
-      alert('❌ Error al cargar cultivos');
-    }
-  };
-
-  const fetchFincas = async () => {
-    try {
-      const res = await api.get(FINCAS_URL);
-      setFincas(res.data);
-    } catch (err) {
-      console.error('Error al cargar fincas', err);
-      alert('❌ Error al cargar fincas');
+      console.error('Error fetching data', err);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLotes();
-    fetchCultivos();
-    fetchFincas();
+    fetchData();
   }, [refreshFincas]);
 
   const resetForm = () => {
     setEditingId(null);
+    setShowForm(false);
     setFormData({
       nombre: '',
       finca: '',
@@ -94,28 +85,9 @@ const LoteManagementPage = ({ refreshFincas }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.nombre.trim() || !formData.finca || !formData.cultivo) return;
 
-    if (!formData.nombre.trim()) {
-      alert('❌ El nombre del lote es requerido');
-      return;
-    }
-
-    if (!formData.finca) {
-      alert('❌ Debes seleccionar una finca');
-      return;
-    }
-
-    if (!formData.cultivo) {
-      alert('❌ Debes seleccionar un cultivo');
-      return;
-    }
-
-    if (!formData.extensionHectareas || formData.extensionHectareas <= 0) {
-      alert('❌ La extensión del lote debe ser mayor a 0 hectáreas');
-      return;
-    }
-
-    setLoading(true);
+    setSaving(true);
     try {
       const payload = {
         nombre: formData.nombre,
@@ -130,19 +102,17 @@ const LoteManagementPage = ({ refreshFincas }) => {
 
       if (editingId) {
         await api.put(`${API_URL}/${editingId}`, payload);
-        alert('🌳 Lote actualizado correctamente');
       } else {
         await api.post(API_URL, payload);
-        alert('🌳 Lote registrado correctamente en AgroMag');
       }
 
       resetForm();
-      fetchLotes();
+      fetchData();
     } catch (err) {
       console.error(err);
-      alert('❌ Error al guardar lote: ' + (err.response?.data || err.message));
+      alert('❌ Error al guardar lote');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -159,214 +129,282 @@ const LoteManagementPage = ({ refreshFincas }) => {
       imagen: lote.imagen || null,
       imagenPreview: lote.imagen || null
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setShowForm(true);
   };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('¿Estás seguro de eliminar este lote?')) {
+      try {
+        await api.delete(`${API_URL}/${id}`);
+        fetchData();
+      } catch (err) {
+        console.error('Error deleting lote:', err);
+      }
+    }
+  };
+
+  const filteredLotes = lotes.filter(l => 
+    l.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (l.finca?.nombre && l.finca.nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (l.cultivo?.nombre && l.cultivo.nombre.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  if (loading && lotes.length === 0) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-agro-emerald"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <DashboardCard
-        title={editingId ? 'Editar lote' : 'Nuevo lote'}
-        subtitle="Define los datos del lote con claridad y agrega una imagen representativa"
-        action={
-          editingId && (
-            <button
-              type="button"
-              onClick={resetForm}
-              className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
+      {/* Header & Actions */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-agro-emerald/10 rounded-2xl text-agro-emerald">
+            <Layers className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Gestión de Lotes</h2>
+            <p className="text-sm text-slate-500 font-medium">Administra las divisiones productivas de tus fincas</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all duration-300 shadow-soft hover:shadow-medium ${
+            showForm ? 'bg-slate-100 text-slate-600' : 'bg-agro-emerald text-white shadow-agro-emerald/20'
+          }`}
+        >
+          {showForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+          {showForm ? 'Cancelar' : 'Nuevo Lote'}
+        </button>
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative group max-w-2xl">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-agro-emerald transition-colors">
+          <Search className="w-5 h-5" />
+        </div>
+        <input
+          type="text"
+          placeholder="Buscar por lote, finca o cultivo..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-agro-emerald focus:ring-4 focus:ring-agro-emerald/10 transition-all text-slate-700 font-medium shadow-sm"
+        />
+      </div>
+
+      {/* Form Section */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <DashboardCard
+              title={editingId ? 'Actualizar Lote' : 'Registrar Lote'}
+              subtitle="Define la ubicación y asigna un cultivo específico"
             >
-              Cancelar edición
-            </button>
-          )
-        }
-      >
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block text-sm text-slate-700">
-              Nombre del lote
-              <input
-                value={formData.nombre}
-                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-                placeholder="Ej. Lote Central"
-                required
-              />
-            </label>
-            <label className="block text-sm text-slate-700">
-              Finca
-              <select
-                value={formData.finca}
-                onChange={(e) => setFormData({ ...formData, finca: e.target.value })}
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-                required
-              >
-                <option value="">Selecciona una finca</option>
-                {fincas.map((finca) => (
-                  <option key={finca.id} value={finca.id}>{finca.nombre}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block text-sm text-slate-700">
-              Cultivo principal
-              <select
-                value={formData.cultivo}
-                onChange={(e) => setFormData({ ...formData, cultivo: e.target.value })}
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-                required
-              >
-                <option value="">Selecciona un cultivo</option>
-                {cultivos.map((cultivo) => (
-                  <option key={cultivo.id} value={cultivo.id}>{cultivo.nombre}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block text-sm text-slate-700">
-              Extensión (ha)
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={formData.extensionHectareas}
-                onChange={(e) => setFormData({ ...formData, extensionHectareas: e.target.value })}
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-                placeholder="0.00"
-                required
-              />
-            </label>
-            <label className="block text-sm text-slate-700">
-              Etapa de desarrollo
-              <select
-                value={formData.etapaDesarrollo}
-                onChange={(e) => setFormData({ ...formData, etapaDesarrollo: e.target.value })}
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-              >
-                <option value="SIEMBRA">Siembra</option>
-                <option value="CRECIMIENTO">Crecimiento</option>
-                <option value="COSECHA">Cosecha</option>
-              </select>
-            </label>
-          </div>
-
-          <label className="block text-sm text-slate-700">
-            Coordenadas / referencia
-            <input
-              value={formData.coordenadas}
-              onChange={(e) => setFormData({ ...formData, coordenadas: e.target.value })}
-              className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-              placeholder="Ej. 10.1234, -84.5678"
-            />
-          </label>
-
-          <label className="block text-sm text-slate-700">
-            Observaciones
-            <textarea
-              value={formData.observaciones}
-              onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
-              className="mt-2 h-28 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-              placeholder="Detalles del manejo o próximas actividades"
-            />
-          </label>
-
-          <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-end">
-            <label className="block text-sm text-slate-700">
-              Imagen del lote
-              <div className="mt-2 flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-agro-emerald/10 text-agro-emerald">
-                  <ImagePlus className="h-6 w-6" />
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Nombre del Lote</label>
+                    <input
+                      required
+                      value={formData.nombre}
+                      onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-agro-emerald transition-colors"
+                      placeholder="Ej. Sector Norte 01"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Finca Asignada</label>
+                    <select
+                      required
+                      value={formData.finca}
+                      onChange={(e) => setFormData({ ...formData, finca: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-agro-emerald transition-colors"
+                    >
+                      <option value="">Seleccionar Finca</option>
+                      {fincas.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Cultivo</label>
+                    <select
+                      required
+                      value={formData.cultivo}
+                      onChange={(e) => setFormData({ ...formData, cultivo: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-agro-emerald transition-colors"
+                    >
+                      <option value="">Seleccionar Cultivo</option>
+                      {cultivos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Extensión (ha)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={formData.extensionHectareas}
+                      onChange={(e) => setFormData({ ...formData, extensionHectareas: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-agro-emerald transition-colors"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Etapa Actual</label>
+                    <select
+                      value={formData.etapaDesarrollo}
+                      onChange={(e) => setFormData({ ...formData, etapaDesarrollo: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-agro-emerald transition-colors"
+                    >
+                      <option value="SIEMBRA">Siembra</option>
+                      <option value="CRECIMIENTO">Crecimiento</option>
+                      <option value="COSECHA">Cosecha</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Ubicación (GPS)</label>
+                    <input
+                      value={formData.coordenadas}
+                      onChange={(e) => setFormData({ ...formData, coordenadas: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-agro-emerald transition-colors"
+                      placeholder="Coordenadas"
+                    />
+                  </div>
                 </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="file:mr-4 file:rounded-full file:border-0 file:bg-agro-emerald file:px-4 file:py-2 file:text-sm file:text-white"
-                />
-              </div>
-            </label>
-            <button
-              type="submit"
-              className="rounded-3xl bg-agro-emerald px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-agro-emerald/20 transition hover:bg-green-700"
-              disabled={loading}
-            >
-              {loading ? 'Guardando...' : editingId ? 'Actualizar lote' : 'Guardar lote'}
-            </button>
-          </div>
 
-          {formData.imagenPreview && (
-            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
-              <img src={formData.imagenPreview} alt="Vista previa del lote" className="h-56 w-full object-cover" />
-            </div>
-          )}
-        </form>
-      </DashboardCard>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Notas de Campo</label>
+                  <textarea
+                    value={formData.observaciones}
+                    onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+                    rows={2}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-agro-emerald transition-colors resize-none"
+                    placeholder="Alguna observación relevante..."
+                  />
+                </div>
 
-      <DashboardCard
-        title="Lotes activos"
-        subtitle="Monitorea la cartera actual y accede rápido a cada lote"
-      >
+                <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-end">
+                  <div className="flex-1 w-full space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Foto del Terreno</label>
+                    <div className="flex items-center gap-4 p-4 bg-slate-50 border border-dashed border-slate-300 rounded-2xl transition-colors hover:bg-slate-100">
+                      {formData.imagenPreview ? (
+                        <img src={formData.imagenPreview} className="w-16 h-16 rounded-xl object-cover shadow-sm" alt="Preview" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-xl bg-slate-200 flex items-center justify-center text-slate-400">
+                          <ImagePlus className="w-6 h-6" />
+                        </div>
+                      )}
+                      <input type="file" accept="image/*" onChange={handleImageChange} className="text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-agro-emerald file:text-white hover:file:bg-green-700 cursor-pointer" />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full sm:w-auto px-8 py-4 bg-agro-emerald text-white rounded-2xl font-bold shadow-lg shadow-agro-emerald/20 hover:shadow-xl transition-all disabled:opacity-50"
+                  >
+                    {saving ? 'Guardando...' : editingId ? 'Actualizar Lote' : 'Guardar Lote'}
+                  </button>
+                </div>
+              </form>
+            </DashboardCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* List Section */}
+      <div className="bg-white rounded-[2rem] border border-slate-200 shadow-soft overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-left text-sm text-slate-700">
-            <thead className="bg-slate-100 text-slate-700">
-              <tr>
-                <th className="px-4 py-4 font-semibold">Imagen</th>
-                <th className="px-4 py-4 font-semibold">Lote</th>
-                <th className="px-4 py-4 font-semibold">Finca</th>
-                <th className="px-4 py-4 font-semibold">Cultivo</th>
-                <th className="px-4 py-4 font-semibold">Etapa</th>
-                <th className="px-4 py-4 font-semibold">Extensión</th>
-                <th className="px-4 py-4 font-semibold">Estado</th>
-                <th className="px-4 py-4 font-semibold">Acciones</th>
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50/50 border-b border-slate-100">
+                <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Identificación</th>
+                <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Asignación</th>
+                <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Detalles</th>
+                <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 bg-white">
-              {lotes.map((lote) => (
-                <tr key={lote.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-4">
-                    {lote.imagen ? (
-                      <img src={lote.imagen} alt={lote.nombre} className="h-12 w-12 rounded-xl object-cover" />
-                    ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">
-                        Sin imagen
+            <tbody className="divide-y divide-slate-100">
+              {filteredLotes.map((lote) => (
+                <tr key={lote.id} className="group hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-4">
+                      {lote.imagen ? (
+                        <img src={lote.imagen} className="w-14 h-14 rounded-2xl object-cover shadow-sm group-hover:scale-105 transition-transform" alt={lote.nombre} />
+                      ) : (
+                        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-300">
+                          <Layers className="w-6 h-6" />
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="font-bold text-slate-900 leading-tight">{lote.nombre}</h4>
+                        <div className="flex items-center gap-1 text-slate-400 mt-1">
+                          <MapPin className="w-3 h-3" />
+                          <span className="text-[10px] font-medium uppercase tracking-wider">{lote.coordenadas || 'Sin GPS'}</span>
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </td>
-                  <td className="px-4 py-4 font-semibold text-slate-900">{lote.nombre}</td>
-                  <td className="px-4 py-4">{lote.finca?.nombre || 'Sin finca'}</td>
-                  <td className="px-4 py-4">{lote.cultivo?.nombre || 'Sin cultivo'}</td>
-                  <td className="px-4 py-4 text-slate-600">{lote.etapaDesarrollo}</td>
-                  <td className="px-4 py-4">{lote.extensionHectareas ?? '-' } ha</td>
-                  <td className="px-4 py-4">
-                    <span className="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-green-700">
-                      Activo
-                    </span>
+                  <td className="px-6 py-5">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-slate-400 font-medium">Finca:</span>
+                        <span className="text-slate-700 font-bold">{lote.finca?.nombre || '-'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-slate-400 font-medium">Cultivo:</span>
+                        <span className="text-agro-emerald font-bold flex items-center gap-1">
+                          <Leaf className="w-3 h-3" />
+                          {lote.cultivo?.nombre || '-'}
+                        </span>
+                      </div>
+                    </div>
                   </td>
-                  <td className="px-4 py-4">
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(lote)}
-                      className="mr-2 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
-                    >
-                      Editar
-                    </button>
+                  <td className="px-6 py-5">
+                    <div className="flex flex-wrap gap-2">
+                      <span className="px-2 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-lg uppercase tracking-tighter">{lote.etapaDesarrollo}</span>
+                      <span className="px-2 py-1 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-lg uppercase tracking-tighter">{lote.extensionHectareas} HA</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-5">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleEdit(lote)}
+                        className="p-2 text-slate-400 hover:text-agro-emerald hover:bg-agro-emerald/10 rounded-xl transition-all"
+                      >
+                        <Edit className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(lote.id)}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
-              {lotes.length === 0 && (
-                <tr>
-                  <td colSpan="8" className="px-4 py-8 text-center text-slate-500">
-                    No hay lotes registrados aún.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
+          {filteredLotes.length === 0 && (
+            <div className="py-20 text-center">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-200">
+                <Search className="w-10 h-10" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-400">No se encontraron lotes</h3>
+              <p className="text-slate-400 text-sm">Prueba con otro término o registra un nuevo lote.</p>
+            </div>
+          )}
         </div>
-      </DashboardCard>
+      </div>
     </div>
-)};
+  );
+};
 
 export default LoteManagementPage;

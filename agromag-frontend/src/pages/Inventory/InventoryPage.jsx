@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
 import { motion } from 'framer-motion';
-import { DashboardCard } from '../../componets/DashboardComponents';
+import { DashboardCard } from '../../components/DashboardComponents';
 import { Package, AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react';
 
 const InventoryPage = () => {
