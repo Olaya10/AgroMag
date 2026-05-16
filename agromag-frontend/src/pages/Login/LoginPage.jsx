@@ -127,7 +127,7 @@ const LoginPage = ({ onLoginSuccess, onBack }) => {
                                     transition={{ delay: 0.1 }}
                                     className="relative"
                                 >
-                                    <div className="absolute left-4 top-3.5 text-haverts-primary/40">
+                                    <div className={`pointer-events-none absolute left-4 top-3.5 transition-opacity ${registerData.name ? 'opacity-0' : 'text-haverts-primary/40'}`}>
                                         <UserPlus className="w-5 h-5" />
                                     </div>
                                     <input
@@ -145,7 +145,7 @@ const LoginPage = ({ onLoginSuccess, onBack }) => {
                                     transition={{ delay: 0.2 }}
                                     className="relative"
                                 >
-                                    <div className="absolute left-4 top-3.5 text-haverts-primary/40">
+                                    <div className={`pointer-events-none absolute left-4 top-3.5 transition-opacity ${registerData.cedula ? 'opacity-0' : 'text-haverts-primary/40'}`}>
                                         <ShieldCheck className="w-5 h-5" />
                                     </div>
                                     <input
@@ -182,7 +182,7 @@ const LoginPage = ({ onLoginSuccess, onBack }) => {
                             transition={{ delay: 0.3 }}
                             className="relative"
                         >
-                            <div className="absolute left-4 top-3.5 text-haverts-primary/40">
+                            <div className={`pointer-events-none absolute left-4 top-3.5 transition-opacity ${(registerMode ? registerData.email : loginData.email) ? 'opacity-0' : 'text-haverts-primary/40'}`}>
                                 <Mail className="w-5 h-5" />
                             </div>
                             <input
@@ -204,7 +204,7 @@ const LoginPage = ({ onLoginSuccess, onBack }) => {
                             transition={{ delay: 0.4 }}
                             className="relative"
                         >
-                            <div className="absolute left-4 top-3.5 text-haverts-primary/40">
+                            <div className={`pointer-events-none absolute left-4 top-3.5 transition-opacity ${(registerMode ? registerData.password : loginData.password) ? 'opacity-0' : 'text-haverts-primary/40'}`}>
                                 <Lock className="w-5 h-5" />
                             </div>
                             <input

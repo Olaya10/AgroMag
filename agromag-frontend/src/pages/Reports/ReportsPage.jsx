@@ -6,11 +6,7 @@ import { DashboardCard } from '../../components/DashboardComponents';
 import { BarChart3, FileText, Download, Activity } from 'lucide-react';
 
 const ReportsPage = () => {
-  const [cultivos, setCultivos] = useState([]);
-  const [riegos, setRiegos] = useState([]);
-  const [aplicaciones, setAplicaciones] = useState([]);
-  const [lotes, setLotes] = useState([]);
-  const [insumos, setInsumos] = useState([]);
+  const [metrics, setMetrics] = useState(null);
   const [reports, setReports] = useState([]);
   const [reportText, setReportText] = useState('');
   const [filterDays, setFilterDays] = useState('7');
@@ -21,19 +17,8 @@ const ReportsPage = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [cultivosRes, riegosRes, aplicacionesRes, lotesRes, insumosRes] = await Promise.all([
-        api.get('/cultivos'),
-        api.get('/riegos'),
-        api.get('/inventory/bodega/aplicaciones'),
-        api.get('/lotes'),
-        api.get('/inventory/bodega/insumos')
-      ]);
-
-      setCultivos(cultivosRes.data || []);
-      setRiegos(riegosRes.data || []);
-      setAplicaciones(aplicacionesRes.data || []);
-      setLotes(lotesRes.data || []);
-      setInsumos(insumosRes.data || []);
+      const response = await api.get('/reports/dashboard-metrics');
+      setMetrics(response.data);
     } catch (error) {
       console.error('Error cargando los datos de reporte', error);
       alert('No se pudo cargar la información de reportes. Intenta nuevamente.');
@@ -114,66 +99,8 @@ const ReportsPage = () => {
     return new Date(dateString).toLocaleString();
   };
 
-  // RF23: Consolidación de costos
-  const calcularCostosYConsolidacion = () => {
-    let costoFertilizantes = 0;
-    let costoPesticidas = 0;
-    let costoOtros = 0;
-    
-    aplicaciones.forEach(app => {
-      // Mock precioUnitario si no viene del backend
-      const precioUnitario = app.insumo?.precioUnitario || 15; 
-      const costo = Number(app.dosis) * precioUnitario;
-      const tipo = app.insumo?.tipo || 'OTRO';
-
-      if (tipo === 'FERTILIZANTE') costoFertilizantes += costo;
-      else if (tipo === 'PESTICIDA') costoPesticidas += costo;
-      else costoOtros += costo;
-    });
-
-    const costoTotal = costoFertilizantes + costoPesticidas + costoOtros;
-    return { costoFertilizantes, costoPesticidas, costoOtros, costoTotal };
-  };
-
-  const costos = calcularCostosYConsolidacion();
-
-  // RF24: Informe final de cosecha con rentabilidad
-  // Valores proyectados / mockeados basados en la cantidad de cultivos
-  const ingresoEstimado = cultivos.length > 0 ? cultivos.length * 8500 : 0; 
-  const rentabilidad = ingresoEstimado - costos.costoTotal;
-  const roi = costos.costoTotal > 0 ? ((rentabilidad / costos.costoTotal) * 100).toFixed(1) : 0;
-
-  // RF28: Sugerencias basadas en calendario agrícola
-  const getSugerencias = () => {
-    const month = new Date().getMonth();
-    const meses = [
-      "Enero: Época ideal para preparación de suelos y fertilización base.",
-      "Febrero: Monitoreo de plagas tempranas por humedad.",
-      "Marzo: Inicio de riegos fuertes según necesidad de floración.",
-      "Abril: Aplicación preventiva de fungicidas por lluvias.",
-      "Mayo: Poda de formación y mantenimiento de lotes.",
-      "Junio: Época de cosecha temprana para variedades rápidas.",
-      "Julio: Cosecha principal, preparar bodega de almacenamiento.",
-      "Agosto: Limpieza post-cosecha y análisis de suelo.",
-      "Septiembre: Siembra de ciclo corto si aplica.",
-      "Octubre: Refuerzo de nutrientes para cultivos de fin de año.",
-      "Noviembre: Control de malezas previo al cierre de ciclo.",
-      "Diciembre: Planificación financiera y descanso de lotes críticos."
-    ];
-    return { mesActual: new Date().toLocaleString('es-ES', { month: 'long' }), sugerencia: meses[month] };
-  };
-  const calendario = getSugerencias();
-
-  const getLoteInfo = (loteId) => {
-    const lote = lotes.find((item) => item.id === loteId || item.id === Number(loteId));
-    if (!lote) return { loteNombre: 'Lote desconocido', fincaNombre: 'Finca desconocida' };
-    return {
-      loteNombre: lote.nombre || 'Lote sin nombre',
-      fincaNombre: lote.finca?.nombre || 'Finca sin nombre'
-    };
-  };
-
   const downloadReport = () => {
+    if (!metrics) return;
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const margin = 40;
     const lineHeight = 18;
@@ -193,9 +120,12 @@ const ReportsPage = () => {
     doc.setFontSize(10);
     doc.setTextColor('#333');
     const summaryLines = [
-      `Cultivos registrados: ${cultivos.length}`,
-      `Riegos registrados: ${riegos.length}`,
-      `Aplicaciones de insumos registrados: ${aplicaciones.length}`,
+      `Total Registros Globales: ${metrics.totalRegistros}`,
+      `Alertas Pendientes: ${metrics.alertasPendientes}`,
+      `Costo Total: $${metrics.costosConsolidados?.total?.toLocaleString()}`,
+      `Ingreso Bruto Estimado: $${metrics.rentabilidadEstimada?.ingresoBruto?.toLocaleString()}`,
+      `Utilidad Neta: $${metrics.rentabilidadEstimada?.utilidadNeta?.toLocaleString()}`,
+      `ROI Estimado: ${metrics.rentabilidadEstimada?.roi}%`,
     ];
     summaryLines.forEach((line) => {
       doc.text(line, margin, y);
@@ -204,7 +134,7 @@ const ReportsPage = () => {
 
     y += lineHeight;
     const makeSection = (title, items, renderItem) => {
-      if (items.length === 0) return;
+      if (!items || items.length === 0) return;
       if (y > 730) {
         doc.addPage();
         y = margin;
@@ -231,11 +161,9 @@ const ReportsPage = () => {
       y += lineHeight;
     };
 
-    makeSection('Cultivos', cultivos.slice(0, 10), (cultivo) => `• ${cultivo.nombre} — ${cultivo.descripcion || 'Sin descripción'}`);
-    makeSection('Riegos recientes', riegos.slice(-10).reverse(), (riego) => `• ${formatDateTime(riego.fechaHora)} | Lote: ${riego.lote?.nombre || 'N/A'} | ${riego.cantidadAguaLitros} L | ${riego.observaciones || 'Sin observaciones'}`);
-    makeSection('Aplicaciones de insumos', aplicaciones.slice(-10).reverse(), (app) => {
-      const loteInfo = getLoteInfo(app.loteId);
-      return `• ${formatDateTime(app.fecha)} | Insumo: ${app.insumo?.nombreComercial || 'N/A'} | Finca: ${loteInfo.fincaNombre} | Lote: ${loteInfo.loteNombre} | Dosis: ${app.dosis}`;
+    makeSection('Riegos recientes', metrics.ultimosRiegos, (riego) => `• ${formatDateTime(riego.fecha)} | Lote: ${riego.loteNombre} | ${riego.cantidad} L | ${riego.observaciones}`);
+    makeSection('Aplicaciones de insumos', metrics.ultimasAplicaciones, (app) => {
+      return `• ${formatDateTime(app.fecha)} | Insumo: ${app.insumoNombre} | Finca: ${app.fincaNombre} | Lote: ${app.loteNombre} | Dosis: ${app.dosis}`;
     });
 
     doc.save('Reporte-AgroMag.pdf');
@@ -282,6 +210,18 @@ const ReportsPage = () => {
       setLoading(false);
     }
   };
+
+  if (!metrics && loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-agro-emerald border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!metrics) {
+    return <div className="p-8 text-center text-slate-500">Cargando métricas...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -337,12 +277,11 @@ const ReportsPage = () => {
         <DashboardCard className="bg-gradient-to-br from-agro-emerald to-green-600 text-white shadow-lg shadow-agro-emerald/20" title="Resumen total" subtitle="Datos rápidos de tu operación">
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-sm uppercase tracking-[0.24em] opacity-80"><BarChart3 className="h-4 w-4" /> Registros Globales</div>
-            <div className="text-4xl font-bold">{cultivos.length + riegos.length + aplicaciones.length}</div>
+            <div className="text-4xl font-bold">{metrics.totalRegistros}</div>
             <p className="text-sm leading-6 text-white/80">Total de registros generados en AgroMag.</p>
           </div>
         </DashboardCard>
         
-        {/* RF27: Dashboard metrics */}
         <DashboardCard title="Humedad Actual" subtitle="Promedio estimado en campo">
           <div className="flex items-center gap-3">
             <div className="text-4xl font-semibold text-slate-900">65%</div>
@@ -354,7 +293,7 @@ const ReportsPage = () => {
         <DashboardCard title="Alertas Pendientes" subtitle="Stock crítico en inventario">
           <div className="flex items-center gap-3">
             <div className="text-4xl font-semibold text-rose-600">
-              {insumos.filter((i) => Number(i.stockActual) <= Number(i.umbralCritico)).length}
+              {metrics.alertasPendientes}
             </div>
             <span className="text-sm text-rose-600 font-semibold bg-rose-50 px-2 py-1 rounded-lg">Requiere atención</span>
           </div>
@@ -362,16 +301,16 @@ const ReportsPage = () => {
         </DashboardCard>
 
         <DashboardCard title="Última Aplicación" subtitle="Movimiento más reciente">
-          {aplicaciones.length > 0 ? (
+          {metrics.ultimaAplicacion ? (
             <div className="space-y-2">
               <div className="text-xl font-semibold text-slate-900 truncate">
-                {aplicaciones[aplicaciones.length - 1].insumo?.nombreComercial || 'Insumo'}
+                {metrics.ultimaAplicacion.insumoNombre}
               </div>
               <div className="text-sm text-slate-600">
-                Dosis: <span className="font-semibold">{aplicaciones[aplicaciones.length - 1].dosis}</span>
+                Dosis: <span className="font-semibold">{metrics.ultimaAplicacion.dosis}</span>
               </div>
               <p className="text-xs text-slate-500">
-                {new Date(aplicaciones[aplicaciones.length - 1].fecha).toLocaleDateString()}
+                {new Date(metrics.ultimaAplicacion.fecha).toLocaleDateString()}
               </p>
             </div>
           ) : (
@@ -380,7 +319,6 @@ const ReportsPage = () => {
         </DashboardCard>
       </div>
 
-      {/* RF22: Reportes dinámicos con gráficos */}
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
@@ -395,22 +333,20 @@ const ReportsPage = () => {
         </div>
         
         <div className="flex items-end gap-4 h-64 mt-4 w-full overflow-x-auto pb-4 border-b border-slate-200">
-          {riegos.slice(-7).map((riego, index) => {
-            const ejecutado = Number(riego.cantidadAguaLitros) || 0;
-            const programado = 150; // Meta hipotética para el gráfico
+          {metrics.riegosRecientesChart && metrics.riegosRecientesChart.map((riego, index) => {
+            const ejecutado = riego.ejecutado || 0;
+            const programado = riego.programado || 150; 
             const pctEjecutado = Math.min((ejecutado / Math.max(ejecutado, programado)) * 100, 100);
             const pctProgramado = Math.min((programado / Math.max(ejecutado, programado)) * 100, 100);
             
             return (
               <div key={riego.id || index} className="flex flex-col items-center gap-2 flex-1 min-w-[60px]">
                 <div className="flex gap-2 items-end h-48 w-full justify-center">
-                  {/* Barra Ejecutada */}
                   <div className="relative w-8 bg-blue-500 rounded-t-sm transition-all duration-500 hover:bg-blue-600 group" style={{ height: `${pctEjecutado}%` }}>
                     <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                       {ejecutado}L
                     </div>
                   </div>
-                  {/* Barra Programada */}
                   <div className="relative w-8 bg-slate-200 rounded-t-sm transition-all duration-500 hover:bg-slate-300 group" style={{ height: `${pctProgramado}%` }}>
                     <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                       {programado}L
@@ -418,12 +354,12 @@ const ReportsPage = () => {
                   </div>
                 </div>
                 <div className="text-xs text-slate-500 text-center truncate w-full">
-                  {new Date(riego.fechaHora).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  {riego.fechaCorta}
                 </div>
               </div>
             );
           })}
-          {riegos.length === 0 && (
+          {(!metrics.riegosRecientesChart || metrics.riegosRecientesChart.length === 0) && (
             <div className="w-full h-full flex items-center justify-center text-slate-400">No hay datos de riego para graficar.</div>
           )}
         </div>
@@ -439,56 +375,52 @@ const ReportsPage = () => {
         </div>
       </motion.div>
 
-      {/* RF23, RF24, RF28: Finanzas y Planeación */}
       <div className="grid gap-6 xl:grid-cols-3">
-        {/* Consolidación de costos */}
         <DashboardCard title="Costos Consolidados" subtitle="Inversión en insumos">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-600">Fertilizantes</span>
-              <span className="font-semibold text-slate-900">${costos.costoFertilizantes.toLocaleString()}</span>
+              <span className="font-semibold text-slate-900">${metrics.costosConsolidados?.fertilizantes?.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-600">Pesticidas</span>
-              <span className="font-semibold text-slate-900">${costos.costoPesticidas.toLocaleString()}</span>
+              <span className="font-semibold text-slate-900">${metrics.costosConsolidados?.pesticidas?.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-600">Otros</span>
-              <span className="font-semibold text-slate-900">${costos.costoOtros.toLocaleString()}</span>
+              <span className="font-semibold text-slate-900">${metrics.costosConsolidados?.otros?.toLocaleString()}</span>
             </div>
             <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
               <span className="font-bold text-slate-900">Total Invertido</span>
-              <span className="font-bold text-rose-600">${costos.costoTotal.toLocaleString()}</span>
+              <span className="font-bold text-rose-600">${metrics.costosConsolidados?.total?.toLocaleString()}</span>
             </div>
           </div>
         </DashboardCard>
 
-        {/* Rentabilidad de cosecha */}
         <DashboardCard title="Proyección de Cosecha" subtitle="Rentabilidad estimada">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-600">Ingreso Bruto Est.</span>
-              <span className="font-semibold text-emerald-600">+${ingresoEstimado.toLocaleString()}</span>
+              <span className="font-semibold text-emerald-600">+${metrics.rentabilidadEstimada?.ingresoBruto?.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-600">Costos Operativos</span>
-              <span className="font-semibold text-rose-600">-${costos.costoTotal.toLocaleString()}</span>
+              <span className="font-semibold text-rose-600">-${metrics.rentabilidadEstimada?.costosOperativos?.toLocaleString()}</span>
             </div>
             <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
               <span className="font-bold text-slate-900">Utilidad Neta</span>
-              <span className="font-bold text-emerald-600">${rentabilidad.toLocaleString()}</span>
+              <span className="font-bold text-emerald-600">${metrics.rentabilidadEstimada?.utilidadNeta?.toLocaleString()}</span>
             </div>
             <div className="mt-2 text-xs text-center text-slate-500 bg-slate-50 py-2 rounded-lg">
-              ROI Estimado: <strong className={roi >= 0 ? "text-emerald-600" : "text-rose-600"}>{roi}%</strong>
+              ROI Estimado: <strong className={Number(metrics.rentabilidadEstimada?.roi) >= 0 ? "text-emerald-600" : "text-rose-600"}>{metrics.rentabilidadEstimada?.roi}%</strong>
             </div>
           </div>
         </DashboardCard>
 
-        {/* Calendario Agrícola */}
-        <DashboardCard title="Calendario Agrícola" subtitle={`Sugerencias para ${calendario.mesActual}`}>
+        <DashboardCard title="Calendario Agrícola" subtitle={`Sugerencias para ${metrics.calendarioAgricola?.mesActual}`}>
           <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mt-2">
             <p className="text-sm leading-6 text-blue-900">
-              💡 {calendario.sugerencia}
+              💡 {metrics.calendarioAgricola?.sugerencia}
             </p>
           </div>
           <p className="mt-4 text-xs text-slate-500">
@@ -594,44 +526,41 @@ const ReportsPage = () => {
       <div className="grid gap-6 xl:grid-cols-2">
         <DashboardCard title="Últimos riegos" subtitle="Últimos 5 eventos registrados">
           <div className="space-y-4">
-            {riegos.slice(-5).reverse().map((riego) => (
+            {metrics.ultimosRiegos && metrics.ultimosRiegos.map((riego) => (
               <div key={riego.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="font-semibold text-slate-900">{riego.lote?.nombre || 'Lote desconocido'}</p>
-                    <p className="text-sm text-slate-500">{formatDateTime(riego.fechaHora)}</p>
+                    <p className="font-semibold text-slate-900">{riego.loteNombre}</p>
+                    <p className="text-sm text-slate-500">{formatDateTime(riego.fecha)}</p>
                   </div>
                   <span className="inline-flex items-center gap-2 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
-                    <Activity className="h-3.5 w-3.5" /> {riego.cantidadAguaLitros} L
+                    <Activity className="h-3.5 w-3.5" /> {riego.cantidad} L
                   </span>
                 </div>
-                <p className="mt-3 text-sm text-slate-600">{riego.observaciones || 'Sin observaciones'}</p>
+                <p className="mt-3 text-sm text-slate-600">{riego.observaciones}</p>
               </div>
             ))}
-            {riegos.length === 0 && <p className="text-sm text-slate-500">No hay registros de riego aún.</p>}
+            {(!metrics.ultimosRiegos || metrics.ultimosRiegos.length === 0) && <p className="text-sm text-slate-500">No hay registros de riego aún.</p>}
           </div>
         </DashboardCard>
 
         <DashboardCard title="Últimas aplicaciones" subtitle="Últimos 5 movimientos registrados">
           <div className="space-y-4">
-            {aplicaciones.slice(-5).reverse().map((app) => {
-              const loteInfo = getLoteInfo(app.loteId);
-              return (
-                <div key={app.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-semibold text-slate-900">{app.insumo?.nombreComercial || 'Insumo sin nombre'}</p>
-                      <p className="text-sm text-slate-500">{formatDateTime(app.fecha)}</p>
-                    </div>
-                    <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
-                      Dosis {app.dosis}
-                    </span>
+            {metrics.ultimasAplicaciones && metrics.ultimasAplicaciones.map((app) => (
+              <div key={app.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-slate-900">{app.insumoNombre}</p>
+                    <p className="text-sm text-slate-500">{formatDateTime(app.fecha)}</p>
                   </div>
-                  <p className="mt-3 text-sm text-slate-600">Finca: {loteInfo.fincaNombre} — Lote: {loteInfo.loteNombre}</p>
+                  <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                    Dosis {app.dosis}
+                  </span>
                 </div>
-              );
-            })}
-            {aplicaciones.length === 0 && <p className="text-sm text-slate-500">No hay aplicaciones registradas aún.</p>}
+                <p className="mt-3 text-sm text-slate-600">Finca: {app.fincaNombre} — Lote: {app.loteNombre}</p>
+              </div>
+            ))}
+            {(!metrics.ultimasAplicaciones || metrics.ultimasAplicaciones.length === 0) && <p className="text-sm text-slate-500">No hay aplicaciones registradas aún.</p>}
           </div>
         </DashboardCard>
       </div>

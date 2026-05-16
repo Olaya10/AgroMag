@@ -2,7 +2,7 @@ package com.agromag.finca.services;
 
 import com.agromag.finca.entities.Finca;
 import com.agromag.finca.repositories.FincaRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class FincaService {
 
-    @Autowired
-    private FincaRepository fincaRepository;
+    private final FincaRepository fincaRepository;
 
     @Transactional(readOnly = true)
     public List<Finca> getAllFincas() {

@@ -2,15 +2,15 @@ package com.agromag.finca.services;
 
 import com.agromag.finca.entities.Riego;
 import com.agromag.finca.repositories.RiegoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class RiegoService {
 
-    @Autowired
-    private RiegoRepository riegoRepository;
+    private final RiegoRepository riegoRepository;
 
     public List<Riego> listarPorLote(Long loteId) {
         if (loteId == null) {

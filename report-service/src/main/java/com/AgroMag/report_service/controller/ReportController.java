@@ -1,6 +1,8 @@
 package com.AgroMag.report_service.controller;
 
 import com.AgroMag.report_service.service.ReportService;
+import com.AgroMag.report_service.service.DashboardService;
+import com.AgroMag.report_service.dto.DashboardMetricsDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,9 @@ public class ReportController {
     @Autowired
     @Qualifier("pdfReportService")
     private ReportService pdfReportService;
+
+    @Autowired
+    private DashboardService dashboardService;
 
     @GetMapping("/inventory/excel")
     public ResponseEntity<byte[]> downloadInventoryExcel() throws Exception {
@@ -54,5 +59,11 @@ public class ReportController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte_lotes.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(data);
+    }
+
+    @GetMapping("/dashboard-metrics")
+    public ResponseEntity<DashboardMetricsDTO> getDashboardMetrics() {
+        log.info("REST request to get Dashboard Metrics");
+        return ResponseEntity.ok(dashboardService.getDashboardMetrics());
     }
 }

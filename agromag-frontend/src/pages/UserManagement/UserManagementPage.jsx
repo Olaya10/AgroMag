@@ -219,7 +219,7 @@ const UserManagementPage = () => {
 
         <DashboardCard title="Búsqueda rápida" subtitle="Encuentra colaboradores por nombre o documento">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-4 top-4 h-5 w-5 text-slate-400" />
+            <Search className={`pointer-events-none absolute left-4 top-4 h-5 w-5 transition-opacity ${searchTerm ? 'opacity-0' : 'text-slate-400'}`} />
             <input
               type="text"
               value={searchTerm}

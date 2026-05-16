@@ -1,7 +1,7 @@
 package com.agromag.finca.controllers;
 
 import com.agromag.finca.entities.Lote;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import com.agromag.finca.services.LoteService;
@@ -10,10 +10,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/lotes")
+@RequiredArgsConstructor
 public class LoteController {
 
-    @Autowired
-    private LoteService loteService;
+    private final LoteService loteService;
 
     @GetMapping
     public List<Lote> listar() {

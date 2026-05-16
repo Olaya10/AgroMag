@@ -1,7 +1,7 @@
 package com.agromag.finca.controllers;
 
 import com.agromag.finca.entities.Novedad;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.agromag.finca.services.NovedadService;
@@ -10,10 +10,10 @@ import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/novedades")
+@RequiredArgsConstructor
 public class NovedadController {
 
-    @Autowired
-    private NovedadService novedadService;
+    private final NovedadService novedadService;
 
     @PostMapping
     public ResponseEntity<?> registrar(@RequestBody Novedad novedad) {

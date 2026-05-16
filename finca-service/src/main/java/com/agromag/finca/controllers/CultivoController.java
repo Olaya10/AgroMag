@@ -2,7 +2,7 @@ package com.agromag.finca.controllers;
 
 import com.agromag.finca.entities.Cultivo;
 import com.agromag.finca.services.CultivoService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,10 +10,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/cultivos")
+@RequiredArgsConstructor
 public class CultivoController {
 
-    @Autowired
-    private CultivoService cultivoService;
+    private final CultivoService cultivoService;
 
     @GetMapping
     public List<Cultivo> listarActivos() {

@@ -4,23 +4,21 @@ import com.agromag.finca.entities.Lote;
 import com.agromag.finca.entities.Cultivo;
 import com.agromag.finca.entities.Finca;
 import com.agromag.finca.repositories.LoteRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class LoteService {
 
-    @Autowired
-    private LoteRepository loteRepository;
+    private final LoteRepository loteRepository;
 
-    @Autowired
-    private CultivoService cultivoService;
+    private final CultivoService cultivoService;
 
-    @Autowired
-    private FincaService fincaService;
+    private final FincaService fincaService;
 
     public List<Lote> listarPorLote() {
         return loteRepository.findAll();

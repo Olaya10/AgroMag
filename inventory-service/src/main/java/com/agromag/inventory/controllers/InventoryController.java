@@ -2,48 +2,58 @@ package com.agromag.inventory.controllers;
 
 import com.agromag.inventory.entities.Insumo;
 import com.agromag.inventory.entities.Aplicacion;
+import com.agromag.inventory.dto.InsumoDTO;
+import com.agromag.inventory.dto.AplicacionDTO;
+import com.agromag.inventory.dto.InventoryMapper;
 import com.agromag.inventory.repositories.InsumoRepository;
 import com.agromag.inventory.services.InsumoService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/bodega")
+@RequiredArgsConstructor
 public class InventoryController {
 
-    @Autowired
-    private InsumoRepository insumoRepository;
+    private final InsumoRepository insumoRepository;
 
-    @Autowired
-    private InsumoService insumoService;
+    private final InsumoService insumoService;
 
     @PostMapping("/insumos")
-    public Insumo crearInsumo(@RequestBody Insumo insumo) {
-        return insumoRepository.save(insumo);
+    public InsumoDTO crearInsumo(@RequestBody InsumoDTO insumoDTO) {
+        Insumo insumo = InventoryMapper.toEntity(insumoDTO);
+        return InventoryMapper.toDTO(insumoRepository.save(insumo));
     }
 
     @GetMapping("/insumos")
-    public List<Insumo> listarInsumos() {
-        return insumoRepository.findAll();
+    public List<InsumoDTO> listarInsumos() {
+        return insumoRepository.findAll().stream()
+                .map(InventoryMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     @PostMapping("/aplicar")
-    public Aplicacion registrarAplicacion(@RequestBody Aplicacion aplicacion) {
-        return insumoService.registrarAplicacion(aplicacion);
+    public AplicacionDTO registrarAplicacion(@RequestBody AplicacionDTO aplicacionDTO) {
+        Aplicacion aplicacion = InventoryMapper.toEntity(aplicacionDTO);
+        return InventoryMapper.toDTO(insumoService.registrarAplicacion(aplicacion));
     }
 
     @GetMapping("/aplicaciones")
-    public List<Aplicacion> listarAplicaciones() {
-        return insumoService.listarAplicaciones();
+    public List<AplicacionDTO> listarAplicaciones() {
+        return insumoService.listarAplicaciones().stream()
+                .map(InventoryMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     @PutMapping("/aplicaciones/{id}")
-    public ResponseEntity<?> actualizarAplicacion(@PathVariable Long id, @RequestBody Aplicacion aplicacionDetalles) {
+    public ResponseEntity<?> actualizarAplicacion(@PathVariable Long id, @RequestBody AplicacionDTO aplicacionDetallesDTO) {
         try {
-            return ResponseEntity.ok(insumoService.actualizarAplicacion(id, aplicacionDetalles));
+            Aplicacion aplicacionDetalles = InventoryMapper.toEntity(aplicacionDetallesDTO);
+            return ResponseEntity.ok(InventoryMapper.toDTO(insumoService.actualizarAplicacion(id, aplicacionDetalles)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error al actualizar la aplicación: " + e.getMessage());
         }
@@ -60,15 +70,15 @@ public class InventoryController {
     }
 
     @PutMapping("/insumos/{id}")
-    public Insumo actualizarInsumo(@PathVariable Long id, @RequestBody Insumo insumo) {
+    public InsumoDTO actualizarInsumo(@PathVariable Long id, @RequestBody InsumoDTO insumoDTO) {
         return insumoRepository.findById(id)
                 .map(existing -> {
-                    existing.setNombreComercial(insumo.getNombreComercial());
-                    existing.setTipo(insumo.getTipo());
-                    existing.setStockActual(insumo.getStockActual());
-                    existing.setUmbralCritico(insumo.getUmbralCritico());
-                    existing.setUnidadMedida(insumo.getUnidadMedida());
-                    return insumoRepository.save(existing);
+                    existing.setNombreComercial(insumoDTO.getNombreComercial());
+                    existing.setTipo(insumoDTO.getTipo());
+                    existing.setStockActual(insumoDTO.getStockActual());
+                    existing.setUmbralCritico(insumoDTO.getUmbralCritico());
+                    existing.setUnidadMedida(insumoDTO.getUnidadMedida());
+                    return InventoryMapper.toDTO(insumoRepository.save(existing));
                 })
                 .orElseThrow(() -> new RuntimeException("Insumo no encontrado"));
     }

@@ -2,49 +2,54 @@ package com.agromag.finca.controllers;
 
 import com.agromag.finca.entities.Finca;
 import com.agromag.finca.services.FincaService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.agromag.finca.dto.FincaDTO;
+import com.agromag.finca.dto.FincaMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/fincas")
+@RequiredArgsConstructor
 public class FincaController {
 
-    @Autowired
-    private FincaService fincaService;
+    private final FincaService fincaService;
 
     @GetMapping
-    public ResponseEntity<List<Finca>> getAllFincas() {
-        List<Finca> fincas = fincaService.getAllFincas();
+    public ResponseEntity<List<FincaDTO>> getAllFincas() {
+        List<FincaDTO> fincas = fincaService.getAllFincas().stream().map(FincaMapper::toDTO).collect(Collectors.toList());
         return ResponseEntity.ok(fincas);
     }
 
     @GetMapping("/active")
-    public ResponseEntity<List<Finca>> getActiveFincas() {
-        List<Finca> fincas = fincaService.getActiveFincas();
+    public ResponseEntity<List<FincaDTO>> getActiveFincas() {
+        List<FincaDTO> fincas = fincaService.getActiveFincas().stream().map(FincaMapper::toDTO).collect(Collectors.toList());
         return ResponseEntity.ok(fincas);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Finca> getFincaById(@PathVariable Long id) {
+    public ResponseEntity<FincaDTO> getFincaById(@PathVariable Long id) {
         return fincaService.getFincaById(id)
-                .map(finca -> ResponseEntity.ok(finca))
+                .map(finca -> ResponseEntity.ok(FincaMapper.toDTO(finca)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Finca> createFinca(@RequestBody Finca finca) {
+    public ResponseEntity<FincaDTO> createFinca(@RequestBody FincaDTO fincaDTO) {
+        Finca finca = FincaMapper.toEntity(fincaDTO);
         Finca createdFinca = fincaService.createFinca(finca);
-        return ResponseEntity.ok(createdFinca);
+        return ResponseEntity.ok(FincaMapper.toDTO(createdFinca));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Finca> updateFinca(@PathVariable Long id, @RequestBody Finca fincaDetails) {
+    public ResponseEntity<FincaDTO> updateFinca(@PathVariable Long id, @RequestBody FincaDTO fincaDetailsDTO) {
+        Finca fincaDetails = FincaMapper.toEntity(fincaDetailsDTO);
         Finca updatedFinca = fincaService.updateFinca(id, fincaDetails);
         if (updatedFinca != null) {
-            return ResponseEntity.ok(updatedFinca);
+            return ResponseEntity.ok(FincaMapper.toDTO(updatedFinca));
         }
         return ResponseEntity.notFound().build();
     }
@@ -58,10 +63,10 @@ public class FincaController {
     }
 
     @PatchMapping("/{id}/active")
-    public ResponseEntity<Finca> toggleActive(@PathVariable Long id) {
+    public ResponseEntity<FincaDTO> toggleActive(@PathVariable Long id) {
         Finca finca = fincaService.toggleActive(id);
         if (finca != null) {
-            return ResponseEntity.ok(finca);
+            return ResponseEntity.ok(FincaMapper.toDTO(finca));
         }
         return ResponseEntity.notFound().build();
     }

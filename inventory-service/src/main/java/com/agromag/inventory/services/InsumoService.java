@@ -4,7 +4,7 @@ import com.agromag.inventory.entities.Insumo;
 import com.agromag.inventory.entities.Aplicacion;
 import com.agromag.inventory.repositories.InsumoRepository;
 import com.agromag.inventory.repositories.AplicacionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,13 +12,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class InsumoService {
 
-    @Autowired
-    private InsumoRepository insumoRepository;
+    private final InsumoRepository insumoRepository;
 
-    @Autowired
-    private AplicacionRepository aplicacionRepository;
+    private final AplicacionRepository aplicacionRepository;
 
     @Transactional
     public Aplicacion registrarAplicacion(Aplicacion aplicacion) {

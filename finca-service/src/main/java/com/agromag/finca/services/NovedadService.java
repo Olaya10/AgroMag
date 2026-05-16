@@ -2,15 +2,15 @@ package com.agromag.finca.services;
 
 import com.agromag.finca.entities.Novedad;
 import com.agromag.finca.repositories.NovedadRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class NovedadService {
 
-    @Autowired
-    private NovedadRepository novedadRepository;
+    private final NovedadRepository novedadRepository;
 
     public List<Novedad> listarPorLote(Long loteId) {
         if(loteId == null) {

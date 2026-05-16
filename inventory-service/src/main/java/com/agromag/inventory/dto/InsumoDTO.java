@@ -1,10 +1,7 @@
-package com.AgroMag.report_service.dto;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+package com.agromag.inventory.dto;
 import lombok.Data;
 
 @Data
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class InsumoDTO {
     private Long id;
     private String nombreComercial;

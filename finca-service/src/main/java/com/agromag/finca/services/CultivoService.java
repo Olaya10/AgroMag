@@ -2,16 +2,16 @@ package com.agromag.finca.services;
 
 import com.agromag.finca.entities.Cultivo;
 import com.agromag.finca.repositories.CultivoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class CultivoService {
 
-    @Autowired
-    private CultivoRepository cultivoRepository;
+    private final CultivoRepository cultivoRepository;
 
     @Transactional(readOnly = true)
     public List<Cultivo> listarActivos() {

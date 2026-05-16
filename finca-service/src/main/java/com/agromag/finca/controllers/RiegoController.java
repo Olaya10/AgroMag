@@ -2,7 +2,7 @@ package com.agromag.finca.controllers;
 
 import com.agromag.finca.entities.Riego;
 import com.agromag.finca.services.RiegoService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 
@@ -10,10 +10,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/riegos")
+@RequiredArgsConstructor
 public class RiegoController {
 
-    @Autowired
-    private RiegoService riegoService;
+    private final RiegoService riegoService;
 
     @PostMapping
     public ResponseEntity<?> registrarRiego(@RequestBody Riego riego) {
