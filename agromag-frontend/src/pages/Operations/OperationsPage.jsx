@@ -5,6 +5,7 @@ import { DashboardCard } from '../../components/DashboardComponents';
 import { Droplet, FlaskConical, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
 
 const OperationsPage = ({ currentUser }) => {
+  const isOperario = currentUser?.role?.toUpperCase() === 'OPERARIO';
   const [fincas, setFincas] = useState([]);
   const [lotes, setLotes] = useState([]);
   const [insumos, setInsumos] = useState([]);
@@ -504,7 +505,7 @@ const OperationsPage = ({ currentUser }) => {
           <div className="space-y-4">
             {filteredRiegos.slice(-5).reverse().map((riego) => (
               <div key={riego.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                {editingRiegoId === riego.id ? (
+                {!isOperario && editingRiegoId === riego.id ? (
                   <div className="space-y-3">
                     <div className="grid gap-2 sm:grid-cols-2">
                       <select
@@ -573,12 +574,16 @@ const OperationsPage = ({ currentUser }) => {
                         <span className="inline-flex items-center gap-2 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
                           <Droplet className="h-4 w-4" /> {riego.cantidadAguaLitros} L
                         </span>
-                        <button onClick={() => handleEditRiegoClick(riego)} className="rounded-full p-2 text-slate-500 hover:bg-slate-200 hover:text-blue-600 transition" title="Editar">
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button onClick={() => handleDeleteRiego(riego.id)} className="rounded-full p-2 text-slate-500 hover:bg-slate-200 hover:text-red-600 transition" title="Eliminar">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {!isOperario && (
+                          <>
+                            <button onClick={() => handleEditRiegoClick(riego)} className="rounded-full p-2 text-slate-500 hover:bg-slate-200 hover:text-blue-600 transition" title="Editar">
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => handleDeleteRiego(riego.id)} className="rounded-full p-2 text-slate-500 hover:bg-slate-200 hover:text-red-600 transition" title="Eliminar">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                     <p className="mt-3 text-sm text-slate-600">{riego.observaciones || 'Sin observaciones'}</p>
@@ -623,11 +628,16 @@ const OperationsPage = ({ currentUser }) => {
             </div>
           </div>
           <div className="space-y-4">
+            {isOperario && (
+              <div className="mb-3 flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <span className="text-xs font-semibold text-amber-700">Modo operario — solo lectura. Editar y eliminar requieren rol Productor o Administrador.</span>
+              </div>
+            )}
             {filteredAplicaciones.slice(-5).reverse().map((app) => {
               const loteInfo = lotes.find((lote) => lote.id === app.loteId);
               return (
                 <div key={app.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                  {editingAplicacionId === app.id ? (
+                  {!isOperario && editingAplicacionId === app.id ? (
                     <div className="space-y-3">
                       <div className="grid gap-2 sm:grid-cols-2">
                         <select
@@ -689,12 +699,16 @@ const OperationsPage = ({ currentUser }) => {
                           <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
                             Dosis {app.dosis}
                           </span>
-                          <button onClick={() => handleEditAplicacionClick(app)} className="rounded-full p-2 text-slate-500 hover:bg-slate-200 hover:text-blue-600 transition" title="Editar">
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button onClick={() => handleDeleteAplicacion(app.id)} className="rounded-full p-2 text-slate-500 hover:bg-slate-200 hover:text-red-600 transition" title="Eliminar">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          {!isOperario && (
+                            <>
+                              <button onClick={() => handleEditAplicacionClick(app)} className="rounded-full p-2 text-slate-500 hover:bg-slate-200 hover:text-blue-600 transition" title="Editar">
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button onClick={() => handleDeleteAplicacion(app.id)} className="rounded-full p-2 text-slate-500 hover:bg-slate-200 hover:text-red-600 transition" title="Eliminar">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                       <p className="mt-3 text-sm text-slate-600">Finca: {loteInfo?.finca?.nombre || 'Finca desconocida'} — Lote: {loteInfo?.nombre || 'Lote desconocido'}</p>
