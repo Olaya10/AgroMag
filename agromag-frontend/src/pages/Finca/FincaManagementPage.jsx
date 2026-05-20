@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { DashboardCard } from '../../components/DashboardComponents';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PageHeader } from '../../components/UIComponents';
 import FincaManagement from './FincaManagement';
 import CultivoManagementPage from '../Cultivos/CultivoManagementPage';
 import LoteManagementPage from '../Lote/LoteManagementPage';
@@ -12,7 +12,7 @@ const TABS = [
 ];
 
 const FincaManagementPage = () => {
-  const [activeTab, setActiveTab] = useState('cultivos');
+  const [activeTab, setActiveTab] = useState('fincas');
   const [refreshLoteFincas, setRefreshLoteFincas] = useState(0);
 
   const handleChangeTab = (tab) => {
@@ -24,46 +24,53 @@ const FincaManagementPage = () => {
 
   return (
     <div className="space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white/80 backdrop-blur-xl border border-slate-200 shadow-medium rounded-3xl p-8"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-agro-emerald font-semibold">Finca</p>
-            <h1 className="mt-3 text-3xl font-display font-bold text-slate-900">Gestión integral de cultivos y lotes</h1>
-            <p className="mt-2 max-w-2xl text-slate-600">Administra tus parcelas con un flujo claro, unificado y visual.</p>
-          </div>
-          <div className="grid grid-cols-3 gap-3 sm:w-fit">
+      <PageHeader
+        label="Fincas"
+        title="Gestión integral de cultivos y lotes"
+        description="Administra tus parcelas, cultivos y fincas con un flujo claro, unificado y visual."
+        action={
+          <div className="flex bg-haverts-secondary/15 p-1.5 rounded-2xl border border-haverts-secondary/20">
             {TABS.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
                 onClick={() => handleChangeTab(tab.key)}
-                className={`rounded-2xl px-5 py-3 text-sm font-semibold transition-all duration-300 ${
+                className={`relative rounded-xl px-5 py-2.5 text-xs font-bold transition-all duration-200 ${
                   activeTab === tab.key
-                    ? 'bg-agro-emerald text-white shadow-lg shadow-agro-emerald/20'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    ? 'text-haverts-base shadow-soft'
+                    : 'text-haverts-primary/70 hover:text-haverts-primary'
                 }`}
               >
-                {tab.label}
+                {activeTab === tab.key && (
+                  <motion.div
+                    layoutId="activeTabBackground"
+                    className="absolute inset-0 bg-haverts-primary rounded-xl"
+                    style={{ zIndex: -1 }}
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">{tab.label}</span>
               </button>
             ))}
           </div>
-        </div>
-      </motion.div>
+        }
+      />
 
-      <DashboardCard className="p-0 overflow-hidden">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.35 }}
-          className="bg-slate-50 px-6 py-5 sm:px-8 sm:py-8"
-        >
-          {activeTab === 'fincas' ? <FincaManagement /> : activeTab === 'cultivos' ? <CultivoManagementPage /> : <LoteManagementPage refreshFincas={refreshLoteFincas} />}
-        </motion.div>
-      </DashboardCard>
+      <div className="bg-white/40 backdrop-blur-sm rounded-[2rem] border border-haverts-secondary/20 p-6 sm:p-8">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
+          >
+            {activeTab === 'fincas' && <FincaManagement />}
+            {activeTab === 'cultivos' && <CultivoManagementPage />}
+            {activeTab === 'lotes' && <LoteManagementPage refreshFincas={refreshLoteFincas} />}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 };

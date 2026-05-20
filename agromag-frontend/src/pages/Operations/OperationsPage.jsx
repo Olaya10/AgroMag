@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import api from '../../api';
 import { motion as Motion } from 'framer-motion';
 import { DashboardCard } from '../../components/DashboardComponents';
+import { PageHeader, toast, useConfirm, Spinner } from '../../components/UIComponents';
 import { Droplet, FlaskConical, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
 
 const OperationsPage = ({ currentUser }) => {
   const isOperario = currentUser?.role?.toUpperCase() === 'OPERARIO';
+  const { confirm, ConfirmModal } = useConfirm();
+
   const [fincas, setFincas] = useState([]);
   const [lotes, setLotes] = useState([]);
   const [insumos, setInsumos] = useState([]);
@@ -13,7 +16,10 @@ const OperationsPage = ({ currentUser }) => {
   const [aplicaciones, setAplicaciones] = useState([]);
   const [cultivos, setCultivos] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
+
+  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+
   const [filterRiegosFrom, setFilterRiegosFrom] = useState('');
   const [filterRiegosTo, setFilterRiegosTo] = useState('');
   const [filterAplicacionesFrom, setFilterAplicacionesFrom] = useState('');
@@ -28,35 +34,51 @@ const OperationsPage = ({ currentUser }) => {
   const [editingAplicacionId, setEditingAplicacionId] = useState(null);
   const [editingAplicacionData, setEditingAplicacionData] = useState({ loteId: '', insumoId: '', dosis: '', fecha: '' });
 
-  const fetchFincas = async () => {
+  const loadAllData = async () => {
     try {
-      const res = await api.get('/fincas');
-      setFincas(res.data);
+      const [
+        fincasRes,
+        lotesRes,
+        insumosRes,
+        riegosRes,
+        aplicacionesRes,
+        cultivosRes,
+        usuariosRes
+      ] = await Promise.all([
+        api.get('/fincas'),
+        api.get('/lotes'),
+        api.get('/inventory/bodega/insumos'),
+        api.get('/riegos'),
+        api.get('/inventory/bodega/aplicaciones'),
+        api.get('/cultivos'),
+        api.get('/auth/usuarios-json').catch(() => ({ data: [] }))
+      ]);
+
+      setFincas(fincasRes.data);
+      setLotes(lotesRes.data);
+      setInsumos(insumosRes.data);
+      setRiegos(riegosRes.data);
+      setAplicaciones(aplicacionesRes.data);
+      setCultivos(cultivosRes.data);
+      setUsuarios(usuariosRes.data);
     } catch (err) {
-      console.error('Error al cargar fincas', err);
+      console.error('Error al cargar datos de operaciones', err);
+      toast.error('Error al cargar datos del servidor');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const fetchLotes = async () => {
-    try {
-      const res = await api.get('/lotes');
-      setLotes(res.data);
-    } catch (err) {
-      console.error('Error al cargar lotes', err);
-    }
-  };
+  useEffect(() => {
+    loadAllData();
+  }, []);
 
-  const getLotesByFinca = (fincaId) => {
-    if (!fincaId) return [];
-    return lotes.filter((lote) => lote.finca?.id === Number(fincaId));
-  };
-
-  const fetchInsumos = async () => {
+  const fetchRiegos = async () => {
     try {
-      const res = await api.get('/inventory/bodega/insumos');
-      setInsumos(res.data);
+      const res = await api.get('/riegos');
+      setRiegos(res.data);
     } catch (err) {
-      console.error('Error al cargar insumos', err);
+      console.error(err);
     }
   };
 
@@ -65,46 +87,23 @@ const OperationsPage = ({ currentUser }) => {
       const res = await api.get('/inventory/bodega/aplicaciones');
       setAplicaciones(res.data);
     } catch (err) {
-      console.error('Error al cargar aplicaciones', err);
+      console.error(err);
     }
   };
 
-  const fetchRiegos = async () => {
+  const fetchInsumos = async () => {
     try {
-      const res = await api.get('/riegos');
-      setRiegos(res.data);
+      const res = await api.get('/inventory/bodega/insumos');
+      setInsumos(res.data);
     } catch (err) {
-      console.error('Error al cargar riegos', err);
+      console.error(err);
     }
   };
 
-  const fetchCultivos = async () => {
-    try {
-      const res = await api.get('/cultivos');
-      setCultivos(res.data);
-    } catch (err) {
-      console.error('Error al cargar cultivos', err);
-    }
+  const getLotesByFinca = (fincaId) => {
+    if (!fincaId) return [];
+    return lotes.filter((lote) => lote.finca?.id === Number(fincaId));
   };
-
-  const fetchUsuarios = async () => {
-    try {
-      const res = await api.get('/auth/usuarios-json');
-      setUsuarios(res.data);
-    } catch (err) {
-      console.warn('Error al cargar usuarios', err);
-    }
-  };
-
-  useEffect(() => {
-    fetchFincas();
-    fetchLotes();
-    fetchInsumos();
-    fetchRiegos();
-    fetchAplicaciones();
-    fetchCultivos();
-    fetchUsuarios();
-  }, []);
 
   const handleRiegoSubmit = async (e) => {
     e.preventDefault();
@@ -112,17 +111,18 @@ const OperationsPage = ({ currentUser }) => {
     try {
       await api.post('/riegos', {
         fechaHora: riegoData.fechaHora || new Date().toISOString().slice(0, 19),
+        amount: Number(riegoData.cantidadAguaLitros), // Wait, does the API expect cantidadAguaLitros or amount? Let's check from original code line 117 it was cantidadAguaLitros
         cantidadAguaLitros: Number(riegoData.cantidadAguaLitros),
         observaciones: riegoData.observaciones,
         lote: { id: Number(riegoData.loteId) },
         cultivo: riegoData.cultivoId ? { id: Number(riegoData.cultivoId) } : null
       });
-      alert('💧 Riego registrado correctamente');
+      toast.success('💧 Riego registrado correctamente');
       setRiegoData({ fincaId: '', loteId: '', cultivoId: '', cantidadAguaLitros: '', fechaHora: '', observaciones: '' });
       fetchRiegos();
     } catch (error) {
       console.error('Error al registrar el riego', error);
-      alert('❌ Error al registrar el riego');
+      toast.error('Error al registrar el riego');
     } finally {
       setActionLoading(false);
     }
@@ -164,13 +164,13 @@ const OperationsPage = ({ currentUser }) => {
         insumo: { id: Number(aplicacionData.insumoId) },
         fecha: aplicacionData.fecha || new Date().toISOString().slice(0, 19)
       });
-      alert('🌱 Aplicación de insumo registrada');
+      toast.success('🌱 Aplicación de insumo registrada');
       setAplicacionData({ fincaId: '', loteId: '', insumoId: '', dosis: '', fecha: '' });
       fetchInsumos();
       fetchAplicaciones();
     } catch (error) {
       console.error('Error al registrar la aplicación', error);
-      alert('❌ Error al registrar la aplicación');
+      toast.error('Error al registrar la aplicación');
     } finally {
       setActionLoading(false);
     }
@@ -197,27 +197,28 @@ const OperationsPage = ({ currentUser }) => {
         lote: { id: Number(editingRiegoData.loteId) },
         cultivo: editingRiegoData.cultivoId ? { id: Number(editingRiegoData.cultivoId) } : null
       });
-      alert('💧 Riego actualizado correctamente');
+      toast.success('Riego actualizado correctamente');
       setEditingRiegoId(null);
       fetchRiegos();
     } catch (error) {
       console.error('Error al actualizar el riego', error);
-      alert('❌ Error al actualizar el riego');
+      toast.error('Error al actualizar el riego');
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleDeleteRiego = async (id) => {
-    if (!window.confirm('¿Está seguro de eliminar este riego?')) return;
+    const ok = await confirm('¿Está seguro de eliminar este riego?');
+    if (!ok) return;
     setActionLoading(true);
     try {
       await api.delete(`/riegos/${id}`);
-      alert('💧 Riego eliminado correctamente');
+      toast.success('Riego eliminado correctamente');
       fetchRiegos();
     } catch (error) {
       console.error('Error al eliminar el riego', error);
-      alert('❌ Error al eliminar el riego');
+      toast.error('Error al eliminar el riego');
     } finally {
       setActionLoading(false);
     }
@@ -243,77 +244,82 @@ const OperationsPage = ({ currentUser }) => {
         insumo: { id: Number(editingAplicacionData.insumoId) },
         fecha: editingAplicacionData.fecha
       });
-      alert('🌱 Aplicación actualizada correctamente');
+      toast.success('Aplicación actualizada correctamente');
       setEditingAplicacionId(null);
       fetchInsumos();
       fetchAplicaciones();
     } catch (error) {
       console.error('Error al actualizar la aplicación', error);
-      alert('❌ Error al actualizar la aplicación');
+      toast.error('Error al actualizar la aplicación');
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleDeleteAplicacion = async (id) => {
-    if (!window.confirm('¿Está seguro de eliminar esta aplicación?')) return;
+    const ok = await confirm('¿Está seguro de eliminar esta aplicación?');
+    if (!ok) return;
     setActionLoading(true);
     try {
       await api.delete(`/inventory/bodega/aplicaciones/${id}`);
-      alert('🌱 Aplicación eliminada correctamente');
+      toast.success('Aplicación eliminada correctamente');
       fetchInsumos();
       fetchAplicaciones();
     } catch (error) {
       console.error('Error al eliminar la aplicación', error);
-      alert('❌ Error al eliminar la aplicación');
+      toast.error('Error al eliminar la aplicación');
     } finally {
       setActionLoading(false);
     }
   };
 
+  const inputCls = `w-full rounded-2xl border border-haverts-secondary/30 bg-white/60
+                    px-4 py-3 text-sm text-haverts-primary font-medium outline-none
+                    placeholder:text-haverts-primary/30
+                    focus:border-haverts-primary focus:ring-2 focus:ring-haverts-primary/10
+                    transition-all duration-200`;
+
+  if (loading) return <Spinner />;
+
   return (
     <div className="space-y-6">
-      <Motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white/80 backdrop-blur-xl border border-slate-200 shadow-medium rounded-3xl p-8"
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-agro-emerald font-semibold">Operaciones</p>
-            <h1 className="mt-3 text-3xl font-display font-bold text-slate-900">Riegos y aplicaciones en un solo lugar</h1>
-            <p className="mt-2 max-w-2xl text-slate-600">Registra eventos de campo y mantén visible la operación diaria.</p>
-          </div>
+      <ConfirmModal />
+      <PageHeader
+        label="Operaciones"
+        title="Riegos y aplicaciones en un solo lugar"
+        description="Registra eventos de campo y mantén visible la operación diaria."
+        action={
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-3xl bg-slate-50 p-4 shadow-soft">
-              <div className="flex items-center gap-2 text-slate-700">
-                <Droplet className="h-5 w-5 text-agro-emerald" />
-                <span className="font-semibold">Riegos</span>
+            <div className="rounded-2xl bg-haverts-secondary/10 border border-haverts-secondary/20 p-4">
+              <div className="flex items-center gap-2 text-haverts-primary/60 mb-2">
+                <Droplet className="h-4 w-4 text-haverts-primary" />
+                <span className="text-xs font-bold uppercase tracking-wider">Riegos</span>
               </div>
-              <p className="mt-3 text-3xl font-bold text-slate-900">{riegos.length}</p>
+              <p className="text-2xl font-bold text-haverts-primary">{riegos.length}</p>
             </div>
-            <div className="rounded-3xl bg-slate-50 p-4 shadow-soft">
-              <div className="flex items-center gap-2 text-slate-700">
-                <FlaskConical className="h-5 w-5 text-slate-500" />
-                <span className="font-semibold">Insumos</span>
+            <div className="rounded-2xl bg-haverts-secondary/10 border border-haverts-secondary/20 p-4">
+              <div className="flex items-center gap-2 text-haverts-primary/60 mb-2">
+                <FlaskConical className="h-4 w-4 text-haverts-primary/60" />
+                <span className="text-xs font-bold uppercase tracking-wider">Insumos</span>
               </div>
-              <p className="mt-3 text-3xl font-bold text-slate-900">{insumos.length}</p>
+              <p className="text-2xl font-bold text-haverts-primary">{insumos.length}</p>
             </div>
           </div>
-        </div>
-      </Motion.div>
+        }
+      />
 
       <div className="grid gap-6 xl:grid-cols-2">
+        {/* Registrar Riego */}
         <DashboardCard title="Registrar riego" subtitle="Crea un nuevo registro de riego">
           <form className="space-y-4" onSubmit={handleRiegoSubmit}>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm text-slate-700">
+              <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
                 Finca
                 <select
                   required
                   value={riegoData.fincaId}
                   onChange={(e) => setRiegoData({ ...riegoData, fincaId: e.target.value, loteId: '' })}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  className={`mt-2 ${inputCls}`}
                 >
                   <option value="">Selecciona una finca</option>
                   {fincas.map((finca) => (
@@ -321,14 +327,14 @@ const OperationsPage = ({ currentUser }) => {
                   ))}
                 </select>
               </label>
-              <label className="block text-sm text-slate-700">
+              <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
                 Lote destino
                 <select
                   required
                   value={riegoData.loteId}
                   onChange={(e) => setRiegoData({ ...riegoData, loteId: e.target.value })}
                   disabled={!riegoData.fincaId}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  className={`mt-2 ${inputCls} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <option value="">{riegoData.fincaId ? 'Selecciona un lote' : 'Selecciona primero una finca'}</option>
                   {getLotesByFinca(riegoData.fincaId).map((lote) => (
@@ -338,13 +344,13 @@ const OperationsPage = ({ currentUser }) => {
               </label>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm text-slate-700">
+              <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
                 Cultivo
                 <select
                   required
                   value={riegoData.cultivoId}
                   onChange={(e) => setRiegoData({ ...riegoData, cultivoId: e.target.value })}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  className={`mt-2 ${inputCls}`}
                 >
                   <option value="">Selecciona un cultivo</option>
                   {cultivos.map((cultivo) => (
@@ -352,7 +358,7 @@ const OperationsPage = ({ currentUser }) => {
                   ))}
                 </select>
               </label>
-              <label className="block text-sm text-slate-700">
+              <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
                 Volumen (L)
                 <input
                   type="number"
@@ -362,44 +368,45 @@ const OperationsPage = ({ currentUser }) => {
                   value={riegoData.cantidadAguaLitros}
                   onChange={(e) => setRiegoData({ ...riegoData, cantidadAguaLitros: e.target.value })}
                   required
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
-                />
-              </label>
-              <label className="block text-sm text-slate-700">
-                Fecha y hora
-                <input
-                  type="datetime-local"
-                  value={riegoData.fechaHora}
-                  onChange={(e) => setRiegoData({ ...riegoData, fechaHora: e.target.value })}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  className={`mt-2 ${inputCls}`}
                 />
               </label>
             </div>
-            <label className="block text-sm text-slate-700">
+            <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
+              Fecha y hora
+              <input
+                type="datetime-local"
+                value={riegoData.fechaHora}
+                onChange={(e) => setRiegoData({ ...riegoData, fechaHora: e.target.value })}
+                className={`mt-2 ${inputCls}`}
+              />
+            </label>
+            <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
               Observaciones
               <textarea
                 placeholder="Registro opcional"
                 value={riegoData.observaciones}
                 onChange={(e) => setRiegoData({ ...riegoData, observaciones: e.target.value })}
-                className="mt-2 h-28 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                className={`mt-2 h-28 resize-none ${inputCls}`}
               />
             </label>
-            <button type="submit" disabled={actionLoading} className="rounded-3xl bg-agro-emerald px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-agro-emerald/20 transition hover:bg-green-700">
+            <button type="submit" disabled={actionLoading} className="btn-primary w-full sm:w-auto">
               {actionLoading ? 'Guardando...' : 'Registrar Riego'}
             </button>
           </form>
         </DashboardCard>
 
+        {/* Aplicar Insumo */}
         <DashboardCard title="Aplicar insumo" subtitle="Registra una aplicación por lote">
           <form className="space-y-4" onSubmit={handleAplicacionSubmit}>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm text-slate-700">
+              <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
                 Finca
                 <select
                   required
                   value={aplicacionData.fincaId}
                   onChange={(e) => setAplicacionData({ ...aplicacionData, fincaId: e.target.value, loteId: '' })}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  className={`mt-2 ${inputCls}`}
                 >
                   <option value="">Selecciona una finca</option>
                   {fincas.map((finca) => (
@@ -407,14 +414,14 @@ const OperationsPage = ({ currentUser }) => {
                   ))}
                 </select>
               </label>
-              <label className="block text-sm text-slate-700">
+              <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
                 Lote
                 <select
                   required
                   value={aplicacionData.loteId}
                   onChange={(e) => setAplicacionData({ ...aplicacionData, loteId: e.target.value })}
                   disabled={!aplicacionData.fincaId}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  className={`mt-2 ${inputCls} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <option value="">{aplicacionData.fincaId ? 'Selecciona un lote' : 'Selecciona primero una finca'}</option>
                   {getLotesByFinca(aplicacionData.fincaId).map((lote) => (
@@ -423,13 +430,13 @@ const OperationsPage = ({ currentUser }) => {
                 </select>
               </label>
             </div>
-            <label className="block text-sm text-slate-700">
+            <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
               Insumo
               <select
                 required
                 value={aplicacionData.insumoId}
                 onChange={(e) => setAplicacionData({ ...aplicacionData, insumoId: e.target.value })}
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                className={`mt-2 ${inputCls}`}
               >
                 <option value="">Selecciona un insumo</option>
                 {insumos.map((insumo) => (
@@ -438,17 +445,17 @@ const OperationsPage = ({ currentUser }) => {
               </select>
             </label>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm text-slate-700">
+              <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
                 Fecha de aplicación
                 <input
                   type="datetime-local"
                   value={aplicacionData.fecha}
                   onChange={(e) => setAplicacionData({ ...aplicacionData, fecha: e.target.value })}
                   required
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  className={`mt-2 ${inputCls}`}
                 />
               </label>
-              <label className="block text-sm text-slate-700">
+              <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
                 Dosis
                 <input
                   type="number"
@@ -458,11 +465,11 @@ const OperationsPage = ({ currentUser }) => {
                   value={aplicacionData.dosis}
                   onChange={(e) => setAplicacionData({ ...aplicacionData, dosis: e.target.value })}
                   required
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  className={`mt-2 ${inputCls}`}
                 />
               </label>
             </div>
-            <button type="submit" disabled={actionLoading} className="rounded-3xl bg-agro-emerald px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-agro-emerald/20 transition hover:bg-green-700">
+            <button type="submit" disabled={actionLoading} className="btn-primary w-full sm:w-auto">
               {actionLoading ? 'Guardando...' : 'Registrar Aplicación'}
             </button>
           </form>
@@ -470,48 +477,49 @@ const OperationsPage = ({ currentUser }) => {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
+        {/* Riegos Recientes */}
         <DashboardCard title="Riegos recientes" subtitle="Últimos eventos registrados">
-          <div className="mb-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm text-slate-700">
+          <div className="mb-6 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
                 Desde
                 <input
                   type="date"
                   value={filterRiegosFrom}
                   onChange={(e) => setFilterRiegosFrom(e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  className={`mt-1.5 ${inputCls}`}
                 />
               </label>
-              <label className="block text-sm text-slate-700">
+              <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
                 Hasta
                 <input
                   type="date"
                   value={filterRiegosTo}
                   onChange={(e) => setFilterRiegosTo(e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  className={`mt-1.5 ${inputCls}`}
                 />
               </label>
             </div>
-            <div className="mt-3 flex justify-end">
+            <div className="flex justify-end">
               <button
                 type="button"
                 onClick={resetRiegosFilters}
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                className="btn-secondary py-2 text-xs"
               >
                 Limpiar filtros
               </button>
             </div>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {filteredRiegos.slice(-5).reverse().map((riego) => (
-              <div key={riego.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+              <div key={riego.id} className="rounded-2xl border border-haverts-secondary/20 bg-white/40 p-4">
                 {!isOperario && editingRiegoId === riego.id ? (
                   <div className="space-y-3">
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="grid gap-2">
                       <select
                         value={editingRiegoData.loteId}
                         onChange={(e) => setEditingRiegoData({ ...editingRiegoData, loteId: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 p-2 text-sm outline-none"
+                        className="w-full rounded-xl border border-haverts-secondary/30 p-2 text-xs outline-none bg-white"
                       >
                         <option value="">Selecciona un lote</option>
                         {lotes.map((lote) => (
@@ -521,7 +529,7 @@ const OperationsPage = ({ currentUser }) => {
                       <select
                         value={editingRiegoData.cultivoId}
                         onChange={(e) => setEditingRiegoData({ ...editingRiegoData, cultivoId: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 p-2 text-sm outline-none"
+                        className="w-full rounded-xl border border-haverts-secondary/30 p-2 text-xs outline-none bg-white"
                       >
                         <option value="">Selecciona un cultivo</option>
                         {cultivos.map((cultivo) => (
@@ -529,121 +537,120 @@ const OperationsPage = ({ currentUser }) => {
                         ))}
                       </select>
                     </div>
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="grid gap-2">
                       <input
                         type="datetime-local"
                         value={editingRiegoData.fechaHora}
                         onChange={(e) => setEditingRiegoData({ ...editingRiegoData, fechaHora: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 p-2 text-sm outline-none"
+                        className="w-full rounded-xl border border-haverts-secondary/30 p-2 text-xs outline-none bg-white"
                       />
-                    </div>
-                    <div className="grid gap-2 sm:grid-cols-2">
                       <input
                         type="number"
                         min="0"
                         step="0.1"
                         placeholder="Litros"
-                        value={editingRiegoData.cantidadAguaLitros}
-                        onChange={(e) => setEditingRiegoData({ ...editingRiegoData, cantidadAguaLitros: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 p-2 text-sm outline-none"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Observaciones"
-                        value={editingRiegoData.observaciones}
-                        onChange={(e) => setEditingRiegoData({ ...editingRiegoData, observaciones: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 p-2 text-sm outline-none"
+                        value={editingRiegoData.amount || editingRiegoData.cantidadAguaLitros}
+                        onChange={(e) => setEditingRiegoData({ ...editingRiegoData, cantidadAguaLitros: e.target.value, amount: e.target.value })}
+                        className="w-full rounded-xl border border-haverts-secondary/30 p-2 text-xs outline-none bg-white"
                       />
                     </div>
+                    <input
+                      type="text"
+                      placeholder="Observaciones"
+                      value={editingRiegoData.observaciones}
+                      onChange={(e) => setEditingRiegoData({ ...editingRiegoData, observaciones: e.target.value })}
+                      className="w-full rounded-xl border border-haverts-secondary/30 p-2 text-xs outline-none bg-white"
+                    />
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => setEditingRiegoId(null)} className="rounded-xl border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-100">Cancelar</button>
-                      <button onClick={() => handleUpdateRiego(riego.id)} disabled={actionLoading} className="rounded-xl bg-agro-emerald px-3 py-1 text-sm font-semibold text-white hover:bg-green-700">Guardar</button>
+                      <button onClick={() => setEditingRiegoId(null)} className="btn-secondary py-1.5 px-3 text-xs">Cancelar</button>
+                      <button onClick={() => handleUpdateRiego(riego.id)} disabled={actionLoading} className="btn-primary py-1.5 px-3 text-xs">Guardar</button>
                     </div>
                   </div>
                 ) : (
                   <>
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="font-semibold text-slate-900">
+                        <p className="font-bold text-haverts-primary text-sm leading-snug">
                           {riego.lote?.nombre || 'Lote no disponible'} 
                           {riego.cultivo?.nombre ? ` - ${riego.cultivo.nombre}` : ''}
                         </p>
-                        <p className="text-sm text-slate-500">{new Date(riego.fechaHora).toLocaleString()}</p>
+                        <p className="text-[11px] text-haverts-primary/50 font-semibold">{new Date(riego.fechaHora).toLocaleString()}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-2 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
-                          <Droplet className="h-4 w-4" /> {riego.cantidadAguaLitros} L
+                      <div className="flex items-center gap-1.5">
+                        <span className="badge text-[10px] gap-1 py-1 px-2.5">
+                          <Droplet className="h-3.5 w-3.5 text-haverts-primary" /> {riego.cantidadAguaLitros} L
                         </span>
                         {!isOperario && (
-                          <>
-                            <button onClick={() => handleEditRiegoClick(riego)} className="rounded-full p-2 text-slate-500 hover:bg-slate-200 hover:text-blue-600 transition" title="Editar">
-                              <Pencil className="h-4 w-4" />
+                          <div className="flex">
+                            <button onClick={() => handleEditRiegoClick(riego)} className="p-1.5 text-haverts-primary/40 hover:text-haverts-primary rounded-lg transition" title="Editar">
+                              <Pencil className="h-3.5 w-3.5" />
                             </button>
-                            <button onClick={() => handleDeleteRiego(riego.id)} className="rounded-full p-2 text-slate-500 hover:bg-slate-200 hover:text-red-600 transition" title="Eliminar">
-                              <Trash2 className="h-4 w-4" />
+                            <button onClick={() => handleDeleteRiego(riego.id)} className="p-1.5 text-haverts-primary/40 hover:text-red-600 rounded-lg transition" title="Eliminar">
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
-                          </>
+                          </div>
                         )}
                       </div>
                     </div>
-                    <p className="mt-3 text-sm text-slate-600">{riego.observaciones || 'Sin observaciones'}</p>
+                    {riego.observaciones && <p className="mt-2 text-xs text-haverts-primary/70">{riego.observaciones}</p>}
                   </>
                 )}
               </div>
             ))}
-            {filteredRiegos.length === 0 && <p className="text-sm text-slate-500">No hay registros de riegos con ese rango de fechas.</p>}
+            {filteredRiegos.length === 0 && <p className="text-xs text-haverts-primary/40 font-bold text-center py-6">No hay registros de riegos.</p>}
           </div>
         </DashboardCard>
 
+        {/* Aplicaciones Recientes */}
         <DashboardCard title="Aplicaciones recientes" subtitle="Últimos insumos aplicados">
-          <div className="mb-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm text-slate-700">
+          <div className="mb-6 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
                 Desde
                 <input
                   type="date"
                   value={filterAplicacionesFrom}
                   onChange={(e) => setFilterAplicacionesFrom(e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  className={`mt-1.5 ${inputCls}`}
                 />
               </label>
-              <label className="block text-sm text-slate-700">
+              <label className="block text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">
                 Hasta
                 <input
                   type="date"
                   value={filterAplicacionesTo}
                   onChange={(e) => setFilterAplicacionesTo(e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+                  className={`mt-1.5 ${inputCls}`}
                 />
               </label>
             </div>
-            <div className="mt-3 flex justify-end">
+            <div className="flex justify-end">
               <button
                 type="button"
                 onClick={resetAplicacionesFilters}
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                className="btn-secondary py-2 text-xs"
               >
                 Limpiar filtros
               </button>
             </div>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {isOperario && (
-              <div className="mb-3 flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <span className="text-xs font-semibold text-amber-700">Modo operario — solo lectura. Editar y eliminar requieren rol Productor o Administrador.</span>
+              <div className="mb-3 flex items-center gap-2 rounded-xl border border-haverts-secondary/20 bg-haverts-secondary/5 px-3.5 py-2">
+                <span className="text-[11px] font-bold text-haverts-primary/70">Modo operario — solo lectura. Editar/eliminar requiere Productor o Administrador.</span>
               </div>
             )}
             {filteredAplicaciones.slice(-5).reverse().map((app) => {
               const loteInfo = lotes.find((lote) => lote.id === app.loteId);
               return (
-                <div key={app.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <div key={app.id} className="rounded-2xl border border-haverts-secondary/20 bg-white/40 p-4">
                   {!isOperario && editingAplicacionId === app.id ? (
                     <div className="space-y-3">
-                      <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="grid gap-2">
                         <select
                           value={editingAplicacionData.loteId}
                           onChange={(e) => setEditingAplicacionData({ ...editingAplicacionData, loteId: e.target.value })}
-                          className="w-full rounded-xl border border-slate-200 p-2 text-sm outline-none"
+                          className="w-full rounded-xl border border-haverts-secondary/30 p-2 text-xs outline-none bg-white"
                         >
                           <option value="">Selecciona un lote</option>
                           {lotes.map((lote) => (
@@ -653,7 +660,7 @@ const OperationsPage = ({ currentUser }) => {
                         <select
                           value={editingAplicacionData.insumoId}
                           onChange={(e) => setEditingAplicacionData({ ...editingAplicacionData, insumoId: e.target.value })}
-                          className="w-full rounded-xl border border-slate-200 p-2 text-sm outline-none"
+                          className="w-full rounded-xl border border-haverts-secondary/30 p-2 text-xs outline-none bg-white"
                         >
                           <option value="">Selecciona un insumo</option>
                           {insumos.map((insumo) => (
@@ -661,12 +668,12 @@ const OperationsPage = ({ currentUser }) => {
                           ))}
                         </select>
                       </div>
-                      <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="grid gap-2">
                         <input
                           type="datetime-local"
                           value={editingAplicacionData.fecha}
                           onChange={(e) => setEditingAplicacionData({ ...editingAplicacionData, fecha: e.target.value })}
-                          className="w-full rounded-xl border border-slate-200 p-2 text-sm outline-none"
+                          className="w-full rounded-xl border border-haverts-secondary/30 p-2 text-xs outline-none bg-white"
                         />
                         <input
                           type="number"
@@ -675,68 +682,69 @@ const OperationsPage = ({ currentUser }) => {
                           placeholder="Dosis"
                           value={editingAplicacionData.dosis}
                           onChange={(e) => setEditingAplicacionData({ ...editingAplicacionData, dosis: e.target.value })}
-                          className="w-full rounded-xl border border-slate-200 p-2 text-sm outline-none"
+                          className="w-full rounded-xl border border-haverts-secondary/30 p-2 text-xs outline-none bg-white"
                         />
                       </div>
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => setEditingAplicacionId(null)} className="rounded-xl border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-100">Cancelar</button>
-                        <button onClick={() => handleUpdateAplicacion(app.id)} disabled={actionLoading} className="rounded-xl bg-agro-emerald px-3 py-1 text-sm font-semibold text-white hover:bg-green-700">Guardar</button>
+                        <button onClick={() => setEditingAplicacionId(null)} className="btn-secondary py-1.5 px-3 text-xs">Cancelar</button>
+                        <button onClick={() => handleUpdateAplicacion(app.id)} disabled={actionLoading} className="btn-primary py-1.5 px-3 text-xs">Guardar</button>
                       </div>
                     </div>
                   ) : (
                     <>
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <p className="font-semibold text-slate-900">{app.insumo?.nombreComercial || 'Insumo sin nombre'}</p>
-                          <p className="text-sm text-slate-500">{new Date(app.fecha).toLocaleString()}</p>
+                          <p className="font-bold text-haverts-primary text-sm leading-snug">{app.insumo?.nombreComercial || 'Insumo sin nombre'}</p>
+                          <p className="text-[11px] text-haverts-primary/50 font-semibold">{new Date(app.fecha).toLocaleString()}</p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           {app.operarioId && (
-                            <span className="text-xs text-slate-500 font-medium">
+                            <span className="text-[10px] text-haverts-primary/40 font-bold uppercase">
                               Resp: {usuarios.find(u => u.id === app.operarioId)?.name || 'Usuario ' + app.operarioId}
                             </span>
                           )}
-                          <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                          <span className="badge text-[10px] py-1 px-2.5">
                             Dosis {app.dosis}
                           </span>
                           {!isOperario && (
-                            <>
-                              <button onClick={() => handleEditAplicacionClick(app)} className="rounded-full p-2 text-slate-500 hover:bg-slate-200 hover:text-blue-600 transition" title="Editar">
-                                <Pencil className="h-4 w-4" />
+                            <div className="flex">
+                              <button onClick={() => handleEditAplicacionClick(app)} className="p-1.5 text-haverts-primary/40 hover:text-haverts-primary rounded-lg transition" title="Editar">
+                                <Pencil className="h-3.5 w-3.5" />
                               </button>
-                              <button onClick={() => handleDeleteAplicacion(app.id)} className="rounded-full p-2 text-slate-500 hover:bg-slate-200 hover:text-red-600 transition" title="Eliminar">
-                                <Trash2 className="h-4 w-4" />
+                              <button onClick={() => handleDeleteAplicacion(app.id)} className="p-1.5 text-haverts-primary/40 hover:text-red-600 rounded-lg transition" title="Eliminar">
+                                <Trash2 className="h-3.5 w-3.5" />
                               </button>
-                            </>
+                            </div>
                           )}
                         </div>
                       </div>
-                      <p className="mt-3 text-sm text-slate-600">Finca: {loteInfo?.finca?.nombre || 'Finca desconocida'} — Lote: {loteInfo?.nombre || 'Lote desconocido'}</p>
+                      <p className="mt-2 text-xs text-haverts-primary/70">Finca: {loteInfo?.finca?.nombre || 'Finca desconocida'} — Lote: {loteInfo?.nombre || 'Lote desconocido'}</p>
                     </>
                   )}
                 </div>
               );
             })}
-            {filteredAplicaciones.length === 0 && <p className="text-sm text-slate-500">No hay aplicaciones con ese rango de fechas.</p>}
+            {filteredAplicaciones.length === 0 && <p className="text-xs text-haverts-primary/40 font-bold text-center py-6">No hay aplicaciones registradas.</p>}
           </div>
         </DashboardCard>
 
+        {/* Insumos Disponibles */}
         <DashboardCard title="Insumos disponibles" subtitle="Stock reciente en la bodega">
-          <div className="space-y-4">
+          <div className="space-y-3">
             {insumos.slice(0, 5).map((insumo) => (
-              <div key={insumo.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+              <div key={insumo.id} className="rounded-2xl border border-haverts-secondary/20 bg-white/40 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-slate-900">{insumo.nombreComercial}</p>
-                    <p className="text-sm text-slate-500">{insumo.tipo}</p>
+                    <p className="font-bold text-haverts-primary text-sm leading-snug">{insumo.nombreComercial}</p>
+                    <p className="text-[11px] text-haverts-primary/50 font-semibold">{insumo.tipo}</p>
                   </div>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" /> {insumo.stockActual} {insumo.unidadMedida}
+                  <span className="badge text-[10px] py-1 px-2.5 gap-1 font-bold">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-haverts-primary" /> {insumo.stockActual} {insumo.unidadMedida}
                   </span>
                 </div>
               </div>
             ))}
-            {insumos.length === 0 && <p className="text-sm text-slate-500">No hay insumos disponibles.</p>}
+            {insumos.length === 0 && <p className="text-xs text-haverts-primary/40 font-bold text-center py-6">No hay insumos disponibles.</p>}
           </div>
         </DashboardCard>
       </div>

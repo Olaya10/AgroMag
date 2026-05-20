@@ -150,39 +150,8 @@ export const ScrollReveal = ({ children, delay = 0, className = '' }) => {
   );
 };
 
-/**
- * Layout principal con sidebar
- */
-export const DashboardLayout = ({ children, sidebar }) => {
-  return (
-    <div className="flex h-screen bg-haverts-base">
-      {/* Sidebar */}
-      <motion.aside
-        initial={{ x: -300 }}
-        animate={{ x: 0 }}
-        transition={{ duration: 0.3 }}
-        className="hidden md:flex md:w-64 bg-haverts-base border-r border-haverts-secondary/20 shadow-soft flex-col"
-      >
-        {sidebar}
-      </motion.aside>
 
-      {/* Contenido principal */}
-      <main className="flex-1 overflow-auto">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          {children}
-        </motion.div>
-      </main>
-    </div>
-  );
-};
-
-/**
- * Footer premium con diseño orgánico
- */
+/** Footer premium con diseño orgánico*/
 export const Footer = () => {
   return (
     <footer className="bg-haverts-base border-t border-haverts-secondary/20 py-16">

@@ -3,6 +3,7 @@ import jsPDF from 'jspdf';
 import { motion } from 'framer-motion';
 import api from '../../api';
 import { DashboardCard } from '../../components/DashboardComponents';
+import { PageHeader, Spinner, toast } from '../../components/UIComponents';
 import { BarChart3, FileText, Download, Activity } from 'lucide-react';
 
 const ReportsPage = () => {
@@ -21,7 +22,7 @@ const ReportsPage = () => {
       setMetrics(response.data);
     } catch (error) {
       console.error('Error cargando los datos de reporte', error);
-      alert('No se pudo cargar la información de reportes. Intenta nuevamente.');
+      toast.error('No se pudo cargar la información de reportes. Intenta nuevamente.');
     } finally {
       setLoading(false);
     }
@@ -60,7 +61,7 @@ const ReportsPage = () => {
   const saveReport = () => {
     const trimmed = reportText.trim();
     if (!trimmed) {
-      alert('Escribe el contenido del reporte antes de guardarlo.');
+      toast.warning('Escribe el contenido del reporte antes de guardarlo.');
       return;
     }
 
@@ -74,6 +75,7 @@ const ReportsPage = () => {
 
     setReports([newReport, ...reports]);
     setReportText('');
+    toast.success('📝 Reporte guardado en memoria local.');
   };
 
   const filteredReports = reports.filter((report) => {
@@ -182,9 +184,10 @@ const ReportsPage = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      toast.success('📊 Excel descargado correctamente');
     } catch (error) {
       console.error('Error descargando el excel', error);
-      alert('No se pudo generar el reporte Excel. Verifica que el microservicio esté activo.');
+      toast.error('No se pudo generar el reporte Excel. Verifica que el microservicio esté activo.');
     } finally {
       setLoading(false);
     }
@@ -203,136 +206,120 @@ const ReportsPage = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      toast.success('📄 PDF de microservicio descargado');
     } catch (error) {
       console.error('Error descargando el PDF', error);
-      alert('No se pudo generar el reporte PDF desde el servidor.');
+      toast.error('No se pudo generar el reporte PDF desde el servidor.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (!metrics && loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-agro-emerald border-t-transparent"></div>
-      </div>
-    );
-  }
+  const inputCls = `w-full rounded-2xl border border-haverts-secondary/30 bg-white/60
+                    px-4 py-3 text-sm text-haverts-primary font-medium outline-none
+                    placeholder:text-haverts-primary/30
+                    focus:border-haverts-primary focus:ring-2 focus:ring-haverts-primary/10
+                    transition-all duration-200`;
+
+  if (!metrics && loading) return <Spinner />;
 
   if (!metrics) {
-    return <div className="p-8 text-center text-slate-500">Cargando métricas...</div>;
+    return <div className="p-8 text-center text-haverts-primary/50 font-bold">Cargando métricas...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white/80 backdrop-blur-xl border border-slate-200 shadow-medium rounded-3xl p-8"
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-agro-emerald font-semibold">Reportes</p>
-            <h1 className="mt-3 text-3xl font-display font-bold text-slate-900">Visión analítica de campo</h1>
-            <p className="mt-2 max-w-2xl text-slate-600">Extrae información clave de cultivos, riegos y aplicaciones para decisiones más rápidas.</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={downloadReport}
-              disabled={loading}
-              className="inline-flex items-center gap-2 rounded-3xl border border-agro-emerald px-6 py-3 text-sm font-semibold text-agro-emerald transition hover:bg-agro-emerald/10 disabled:cursor-not-allowed disabled:opacity-60"
-            >
+      <PageHeader
+        label="Reportes"
+        title="Visión analítica de campo"
+        description="Extrae información clave de cultivos, riegos y aplicaciones para decisiones más rápidas."
+        action={
+          <div className="flex flex-wrap gap-2.5">
+            <button onClick={downloadReport} disabled={loading} className="btn-secondary text-xs py-2 px-4 gap-2">
               <Download className="h-4 w-4" />
-              {loading ? 'Generando...' : 'Exportar PDF (Local)'}
+              PDF Local
             </button>
-            <button
-              onClick={downloadPdf}
-              disabled={loading}
-              className="inline-flex items-center gap-2 rounded-3xl bg-agro-emerald px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-agro-emerald/20 transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            <button onClick={downloadPdf} disabled={loading} className="btn-primary text-xs py-2 px-4 gap-2">
               <Download className="h-4 w-4" />
-              {loading ? 'Generando...' : 'Exportar PDF (Microservicio)'}
+              PDF Microservicio
             </button>
-            <button
-              onClick={() => downloadExcel('inventory')}
-              disabled={loading}
-              className="inline-flex items-center gap-2 rounded-3xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Download className="h-4 w-4" />
-              Excel Inventario
+            <button onClick={() => downloadExcel('inventory')} disabled={loading} className="btn-primary text-xs py-2 px-4 gap-2">
+              <Download className="h-4 w-4" /> Excel Inventario
             </button>
-            <button
-              onClick={() => downloadExcel('lotes')}
-              disabled={loading}
-              className="inline-flex items-center gap-2 rounded-3xl bg-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-700/20 transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Download className="h-4 w-4" />
-              Excel Lotes
+            <button onClick={() => downloadExcel('lotes')} disabled={loading} className="btn-primary text-xs py-2 px-4 gap-2">
+              <Download className="h-4 w-4" /> Excel Lotes
             </button>
           </div>
-        </div>
-      </motion.div>
+        }
+      />
 
-      <div className="grid gap-6 lg:grid-cols-4">
-        <DashboardCard className="bg-gradient-to-br from-agro-emerald to-green-600 text-white shadow-lg shadow-agro-emerald/20" title="Resumen total" subtitle="Datos rápidos de tu operación">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <DashboardCard 
+          className="bg-haverts-primary text-haverts-base shadow-soft" 
+          title="Resumen total" 
+          subtitle="Datos rápidos de tu operación"
+        >
           <div className="space-y-3">
-            <div className="flex items-center gap-3 text-sm uppercase tracking-[0.24em] opacity-80"><BarChart3 className="h-4 w-4" /> Registros Globales</div>
+            <div className="flex items-center gap-3 text-xs uppercase tracking-[0.24em] opacity-80">
+              <BarChart3 className="h-4 w-4" /> Registros Globales
+            </div>
             <div className="text-4xl font-bold">{metrics.totalRegistros}</div>
-            <p className="text-sm leading-6 text-white/80">Total de registros generados en AgroMag.</p>
+            <p className="text-xs leading-relaxed text-haverts-base/80">Total de registros generados en AgroMag.</p>
           </div>
         </DashboardCard>
         
         <DashboardCard title="Humedad Actual" subtitle="Promedio estimado en campo">
           <div className="flex items-center gap-3">
-            <div className="text-4xl font-semibold text-slate-900">65%</div>
-            <span className="text-sm text-emerald-600 font-semibold bg-emerald-50 px-2 py-1 rounded-lg">+2% óptimo</span>
+            <div className="text-4xl font-bold text-haverts-primary">65%</div>
+            <span className="text-xs text-haverts-primary font-bold bg-haverts-secondary/20 px-2 py-1 rounded-lg">+2% óptimo</span>
           </div>
-          <p className="mt-3 text-sm text-slate-500">Sensor virtual Lote Principal</p>
+          <p className="mt-3 text-xs text-haverts-primary/50 font-semibold">Sensor virtual Lote Principal</p>
         </DashboardCard>
         
         <DashboardCard title="Alertas Pendientes" subtitle="Stock crítico en inventario">
           <div className="flex items-center gap-3">
-            <div className="text-4xl font-semibold text-rose-600">
+            <div className="text-4xl font-bold text-red-600">
               {metrics.alertasPendientes}
             </div>
-            <span className="text-sm text-rose-600 font-semibold bg-rose-50 px-2 py-1 rounded-lg">Requiere atención</span>
+            <span className="text-xs text-red-700 font-bold bg-red-50 px-2 py-1 rounded-lg">Requiere atención</span>
           </div>
-          <p className="mt-3 text-sm text-slate-500">Insumos bajo el umbral mínimo</p>
+          <p className="mt-3 text-xs text-haverts-primary/50 font-semibold">Insumos bajo el umbral mínimo</p>
         </DashboardCard>
 
         <DashboardCard title="Última Aplicación" subtitle="Movimiento más reciente">
           {metrics.ultimaAplicacion ? (
-            <div className="space-y-2">
-              <div className="text-xl font-semibold text-slate-900 truncate">
+            <div className="space-y-1">
+              <div className="text-lg font-bold text-haverts-primary truncate">
                 {metrics.ultimaAplicacion.insumoNombre}
               </div>
-              <div className="text-sm text-slate-600">
-                Dosis: <span className="font-semibold">{metrics.ultimaAplicacion.dosis}</span>
+              <div className="text-xs text-haverts-primary/60 font-semibold">
+                Dosis: <span className="font-bold text-haverts-primary">{metrics.ultimaAplicacion.dosis}</span>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-[10px] text-haverts-primary/40 font-bold uppercase mt-1">
                 {new Date(metrics.ultimaAplicacion.fecha).toLocaleDateString()}
               </p>
             </div>
           ) : (
-            <p className="text-sm text-slate-500">Sin aplicaciones</p>
+            <p className="text-xs text-haverts-primary/50 font-semibold">Sin aplicaciones</p>
           )}
         </DashboardCard>
       </div>
 
+      {/* Riego Chart Card */}
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white/80 backdrop-blur-xl border border-slate-200 shadow-medium rounded-3xl p-8"
+        className="bg-white/40 backdrop-blur-sm border border-haverts-secondary/20 rounded-[2rem] p-6 sm:p-8"
       >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-blue-600 font-semibold">Análisis de Riego</p>
-            <h2 className="mt-3 text-2xl font-display font-bold text-slate-900">Agua Programada vs Ejecutada</h2>
-            <p className="mt-2 text-slate-600">Comparativa dinámica de los últimos 7 riegos (Ejecutado vs Meta de 150L)</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-haverts-primary/50">Análisis de Riego</p>
+            <h2 className="text-xl font-bold text-haverts-primary mt-1">Agua Programada vs Ejecutada</h2>
+            <p className="text-xs text-haverts-primary/60 mt-1 font-semibold">Comparativa dinámica de los últimos 7 riegos (Ejecutado vs Meta de 150L)</p>
           </div>
         </div>
         
-        <div className="flex items-end gap-4 h-64 mt-4 w-full overflow-x-auto pb-4 border-b border-slate-200">
+        <div className="flex items-end gap-4 h-64 mt-4 w-full overflow-x-auto pb-4 border-b border-haverts-secondary/15">
           {metrics.riegosRecientesChart && metrics.riegosRecientesChart.map((riego, index) => {
             const ejecutado = riego.ejecutado || 0;
             const programado = riego.programado || 150; 
@@ -340,144 +327,136 @@ const ReportsPage = () => {
             const pctProgramado = Math.min((programado / Math.max(ejecutado, programado)) * 100, 100);
             
             return (
-              <div key={riego.id || index} className="flex flex-col items-center gap-2 flex-1 min-w-[60px]">
+              <div key={riego.id || index} className="flex flex-col items-center gap-2 flex-1 min-w-[70px]">
                 <div className="flex gap-2 items-end h-48 w-full justify-center">
-                  <div className="relative w-8 bg-blue-500 rounded-t-sm transition-all duration-500 hover:bg-blue-600 group" style={{ height: `${pctEjecutado}%` }}>
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="relative w-8 bg-haverts-primary rounded-t-lg transition-all duration-300 hover:opacity-90 group" style={{ height: `${pctEjecutado}%` }}>
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-haverts-primary text-haverts-base text-[10px] font-bold px-2 py-1 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                       {ejecutado}L
                     </div>
                   </div>
-                  <div className="relative w-8 bg-slate-200 rounded-t-sm transition-all duration-500 hover:bg-slate-300 group" style={{ height: `${pctProgramado}%` }}>
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="relative w-8 bg-haverts-secondary/20 rounded-t-lg transition-all duration-300 hover:bg-haverts-secondary/30 group" style={{ height: `${pctProgramado}%` }}>
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-haverts-secondary text-haverts-primary text-[10px] font-bold px-2 py-1 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                       {programado}L
                     </div>
                   </div>
                 </div>
-                <div className="text-xs text-slate-500 text-center truncate w-full">
+                <div className="text-[10px] font-bold text-haverts-primary/50 text-center truncate w-full">
                   {riego.fechaCorta}
                 </div>
               </div>
             );
           })}
           {(!metrics.riegosRecientesChart || metrics.riegosRecientesChart.length === 0) && (
-            <div className="w-full h-full flex items-center justify-center text-slate-400">No hay datos de riego para graficar.</div>
+            <div className="w-full h-full flex items-center justify-center text-haverts-primary/40 font-semibold">No hay datos de riego para graficar.</div>
           )}
         </div>
         <div className="flex items-center justify-center gap-6 mt-6">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-500 rounded-sm"></div>
-            <span className="text-sm text-slate-600">Ejecutado</span>
+            <div className="w-3.5 h-3.5 bg-haverts-primary rounded-md"></div>
+            <span className="text-xs font-bold text-haverts-primary/70">Ejecutado</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-slate-200 rounded-sm"></div>
-            <span className="text-sm text-slate-600">Programado (Meta)</span>
+            <div className="w-3.5 h-3.5 bg-haverts-secondary/20 rounded-md"></div>
+            <span className="text-xs font-bold text-haverts-primary/70">Programado (Meta)</span>
           </div>
         </div>
       </motion.div>
 
       <div className="grid gap-6 xl:grid-cols-3">
+        {/* Costos Consolidados */}
         <DashboardCard title="Costos Consolidados" subtitle="Inversión en insumos">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Fertilizantes</span>
-              <span className="font-semibold text-slate-900">${metrics.costosConsolidados?.fertilizantes?.toLocaleString()}</span>
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-haverts-primary/60 font-semibold">Fertilizantes</span>
+              <span className="font-bold text-haverts-primary">${metrics.costosConsolidados?.fertilizantes?.toLocaleString()}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Pesticidas</span>
-              <span className="font-semibold text-slate-900">${metrics.costosConsolidados?.pesticidas?.toLocaleString()}</span>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-haverts-primary/60 font-semibold">Pesticidas</span>
+              <span className="font-bold text-haverts-primary">${metrics.costosConsolidados?.pesticidas?.toLocaleString()}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Otros</span>
-              <span className="font-semibold text-slate-900">${metrics.costosConsolidados?.otros?.toLocaleString()}</span>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-haverts-primary/60 font-semibold">Otros</span>
+              <span className="font-bold text-haverts-primary">${metrics.costosConsolidados?.otros?.toLocaleString()}</span>
             </div>
-            <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
-              <span className="font-bold text-slate-900">Total Invertido</span>
-              <span className="font-bold text-rose-600">${metrics.costosConsolidados?.total?.toLocaleString()}</span>
+            <div className="pt-4 border-t border-haverts-secondary/20 flex items-center justify-between text-sm">
+              <span className="font-bold text-haverts-primary">Total Invertido</span>
+              <span className="font-bold text-red-600">${metrics.costosConsolidados?.total?.toLocaleString()}</span>
             </div>
           </div>
         </DashboardCard>
 
+        {/* Proyección de Cosecha */}
         <DashboardCard title="Proyección de Cosecha" subtitle="Rentabilidad estimada">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Ingreso Bruto Est.</span>
-              <span className="font-semibold text-emerald-600">+${metrics.rentabilidadEstimada?.ingresoBruto?.toLocaleString()}</span>
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-haverts-primary/60 font-semibold">Ingreso Bruto Est.</span>
+              <span className="font-bold text-haverts-primary">+${metrics.rentabilidadEstimada?.ingresoBruto?.toLocaleString()}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Costos Operativos</span>
-              <span className="font-semibold text-rose-600">-${metrics.rentabilidadEstimada?.costosOperativos?.toLocaleString()}</span>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-haverts-primary/60 font-semibold">Costos Operativos</span>
+              <span className="font-bold text-red-600">-${metrics.rentabilidadEstimada?.costosOperativos?.toLocaleString()}</span>
             </div>
-            <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
-              <span className="font-bold text-slate-900">Utilidad Neta</span>
-              <span className="font-bold text-emerald-600">${metrics.rentabilidadEstimada?.utilidadNeta?.toLocaleString()}</span>
+            <div className="pt-4 border-t border-haverts-secondary/20 flex items-center justify-between text-sm">
+              <span className="font-bold text-haverts-primary">Utilidad Neta</span>
+              <span className="font-bold text-haverts-primary">${metrics.rentabilidadEstimada?.utilidadNeta?.toLocaleString()}</span>
             </div>
-            <div className="mt-2 text-xs text-center text-slate-500 bg-slate-50 py-2 rounded-lg">
-              ROI Estimado: <strong className={Number(metrics.rentabilidadEstimada?.roi) >= 0 ? "text-emerald-600" : "text-rose-600"}>{metrics.rentabilidadEstimada?.roi}%</strong>
+            <div className="mt-2 text-xs text-center font-bold text-haverts-primary/70 bg-haverts-secondary/15 py-2.5 rounded-2xl">
+              ROI Estimado: <strong className="text-haverts-primary">{metrics.rentabilidadEstimada?.roi}%</strong>
             </div>
           </div>
         </DashboardCard>
 
-        <DashboardCard title="Calendario Agrícola" subtitle={`Sugerencias para ${metrics.calendarioAgricola?.mesActual}`}>
-          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mt-2">
-            <p className="text-sm leading-6 text-blue-900">
+        {/* Calendario Agrícola */}
+        <DashboardCard title="Calendario Agrícola" subtitle={`Sugerencias para ${metrics.calendarioAgricola?.mesActual || 'Mes Actual'}`}>
+          <div className="bg-haverts-secondary/15 border border-haverts-secondary/25 rounded-2xl p-4 mt-2">
+            <p className="text-xs leading-relaxed text-haverts-primary font-semibold">
               💡 {metrics.calendarioAgricola?.sugerencia}
             </p>
           </div>
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-haverts-primary/45">
             Ajusta estas sugerencias según las características específicas de tu región y tipo de cultivo activo.
           </p>
         </DashboardCard>
       </div>
 
+      {/* Reportes Escritos */}
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white/80 backdrop-blur-xl border border-slate-200 shadow-medium rounded-3xl p-8"
+        className="bg-white/40 backdrop-blur-sm border border-haverts-secondary/20 rounded-[2rem] p-6 sm:p-8"
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-agro-emerald font-semibold">Reportes escritos</p>
-            <h2 className="mt-3 text-2xl font-display font-bold text-slate-900">Notas del productor y administrador</h2>
-            <p className="mt-2 max-w-2xl text-slate-600">Productor y administrador pueden escribir reportes libres. Filtra por días o busca por fecha.</p>
-            <p className="mt-1 text-sm text-slate-500">Autor actual: <strong>{currentUser.name}</strong> — Rol: <strong>{currentUser.role}</strong></p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-haverts-primary/50">Reportes escritos</p>
+            <h2 className="text-xl font-bold text-haverts-primary mt-1">Notas del productor y administrador</h2>
+            <p className="text-xs text-haverts-primary/60 mt-1 font-semibold">Productor y administrador pueden escribir reportes libres. Filtra por días o busca por fecha.</p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-haverts-primary/50">Autor actual: <strong className="text-haverts-primary">{currentUser.name}</strong> — Rol: <strong className="text-haverts-primary">{currentUser.role}</strong></p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button
               onClick={saveReport}
-              className="inline-flex items-center gap-2 rounded-3xl bg-agro-emerald px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-agro-emerald/20 transition hover:bg-green-700"
+              className="btn-primary py-2.5 text-xs px-4 flex items-center gap-2"
             >
               <FileText className="h-4 w-4" /> Guardar reporte
             </button>
           </div>
         </div>
 
-        <div className="mt-6 flex justify-center">
-          <button
-            onClick={() => {
-              setReportText('');
-              setTimeout(() => document.querySelector('textarea').focus(), 100);
-            }}
-            className="inline-flex items-center gap-3 rounded-3xl bg-gradient-to-r from-agro-emerald to-green-600 px-8 py-4 text-lg font-bold text-white shadow-xl shadow-agro-emerald/30 transition hover:from-green-600 hover:to-agro-emerald hover:shadow-2xl"
-          >
-            <FileText className="h-5 w-5" /> Crear Nuevo Reporte
-          </button>
-        </div>
-
         <textarea
           value={reportText}
           onChange={(e) => setReportText(e.target.value)}
-          rows={5}
-          className="mt-6 w-full rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+          rows={4}
+          className={`mt-6 ${inputCls} resize-none`}
           placeholder="Escribe aquí tu reporte..."
         />
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="text-sm font-semibold text-slate-700">Filtrar por días</span>
+            <span className="text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">Filtrar por días</span>
             <select
               value={filterDays}
               onChange={(e) => setFilterDays(e.target.value)}
-              className="mt-2 w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+              className={`mt-1.5 ${inputCls}`}
             >
               <option value="7">Últimos 7 días</option>
               <option value="30">Últimos 30 días</option>
@@ -487,12 +466,12 @@ const ReportsPage = () => {
           </label>
 
           <label className="block">
-            <span className="text-sm font-semibold text-slate-700">Buscar por fecha</span>
+            <span className="text-xs font-bold text-haverts-primary/60 uppercase tracking-wider">Buscar por fecha</span>
             <input
               type="search"
               value={dateSearch}
               onChange={(e) => setDateSearch(e.target.value)}
-              className="mt-2 w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-agro-emerald focus:ring-2 focus:ring-agro-emerald/20"
+              className={`mt-1.5 ${inputCls}`}
               placeholder="Buscar por fecha (YYYY-MM-DD)"
             />
           </label>
@@ -500,23 +479,23 @@ const ReportsPage = () => {
 
         <div className="mt-8 space-y-4">
           {filteredReports.length === 0 ? (
-            <p className="text-sm text-slate-500">No hay reportes disponibles con los filtros seleccionados.</p>
+            <p className="text-xs font-bold text-haverts-primary/40 text-center py-8">No hay reportes disponibles con los filtros seleccionados.</p>
           ) : (
             filteredReports.map((report) => (
-              <div key={report.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+              <div key={report.id} className="rounded-2xl border border-haverts-secondary/20 bg-white/40 p-5 shadow-sm">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="font-semibold text-slate-900">{report.author}</p>
-                    <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                    <p className="font-bold text-haverts-primary text-sm">{report.author}</p>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-haverts-primary/50 mt-1">
                       <span>{formatDateTime(report.createdAt)}</span>
-                      <span className="inline-flex rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">{report.authorRole || 'PRODUCTOR'}</span>
+                      <span className="badge text-[9px] py-0.5 px-2 font-bold">{report.authorRole || 'PRODUCTOR'}</span>
                     </div>
                   </div>
-                  <span className="rounded-full bg-agro-emerald/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-agro-emerald">
+                  <span className="badge text-[10px] py-1 px-3">
                     Reporte libre
                   </span>
                 </div>
-                <p className="mt-4 whitespace-pre-line text-sm leading-6 text-slate-700">{report.text}</p>
+                <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-haverts-primary/80 font-medium">{report.text}</p>
               </div>
             ))
           )}
@@ -524,43 +503,45 @@ const ReportsPage = () => {
       </motion.div>
 
       <div className="grid gap-6 xl:grid-cols-2">
+        {/* Últimos Riegos */}
         <DashboardCard title="Últimos riegos" subtitle="Últimos 5 eventos registrados">
-          <div className="space-y-4">
+          <div className="space-y-3 pt-2">
             {metrics.ultimosRiegos && metrics.ultimosRiegos.map((riego) => (
-              <div key={riego.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+              <div key={riego.id} className="rounded-2xl border border-haverts-secondary/20 bg-white/40 p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="font-semibold text-slate-900">{riego.loteNombre}</p>
-                    <p className="text-sm text-slate-500">{formatDateTime(riego.fecha)}</p>
+                    <p className="font-bold text-haverts-primary text-sm">{riego.loteNombre}</p>
+                    <p className="text-[11px] text-haverts-primary/50 font-semibold">{formatDateTime(riego.fecha)}</p>
                   </div>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                  <span className="badge text-[10px] py-1 px-2.5 gap-1 font-bold">
                     <Activity className="h-3.5 w-3.5" /> {riego.cantidad} L
                   </span>
                 </div>
-                <p className="mt-3 text-sm text-slate-600">{riego.observaciones}</p>
+                {riego.observaciones && <p className="mt-2 text-xs text-haverts-primary/70">{riego.observaciones}</p>}
               </div>
             ))}
-            {(!metrics.ultimosRiegos || metrics.ultimosRiegos.length === 0) && <p className="text-sm text-slate-500">No hay registros de riego aún.</p>}
+            {(!metrics.ultimosRiegos || metrics.ultimosRiegos.length === 0) && <p className="text-xs font-bold text-haverts-primary/40 text-center py-6">No hay registros de riego aún.</p>}
           </div>
         </DashboardCard>
 
+        {/* Últimas Aplicaciones */}
         <DashboardCard title="Últimas aplicaciones" subtitle="Últimos 5 movimientos registrados">
-          <div className="space-y-4">
+          <div className="space-y-3 pt-2">
             {metrics.ultimasAplicaciones && metrics.ultimasAplicaciones.map((app) => (
-              <div key={app.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+              <div key={app.id} className="rounded-2xl border border-haverts-secondary/20 bg-white/40 p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="font-semibold text-slate-900">{app.insumoNombre}</p>
-                    <p className="text-sm text-slate-500">{formatDateTime(app.fecha)}</p>
+                    <p className="font-bold text-haverts-primary text-sm">{app.insumoNombre}</p>
+                    <p className="text-[11px] text-haverts-primary/50 font-semibold">{formatDateTime(app.fecha)}</p>
                   </div>
-                  <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                  <span className="badge text-[10px] py-1 px-2.5 font-bold">
                     Dosis {app.dosis}
                   </span>
                 </div>
-                <p className="mt-3 text-sm text-slate-600">Finca: {app.fincaNombre} — Lote: {app.loteNombre}</p>
+                <p className="mt-2 text-xs text-haverts-primary/70 font-semibold">Finca: {app.fincaNombre} — Lote: {app.loteNombre}</p>
               </div>
             ))}
-            {(!metrics.ultimasAplicaciones || metrics.ultimasAplicaciones.length === 0) && <p className="text-sm text-slate-500">No hay aplicaciones registradas aún.</p>}
+            {(!metrics.ultimasAplicaciones || metrics.ultimasAplicaciones.length === 0) && <p className="text-xs font-bold text-haverts-primary/40 text-center py-6">No hay aplicaciones registradas aún.</p>}
           </div>
         </DashboardCard>
       </div>

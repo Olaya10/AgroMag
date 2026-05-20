@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import axios from 'axios';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from './components/DashboardComponents';
+import { useAuth } from './context/AuthContext';
 import HomePage from './pages/Home/HomePage';
 import LoginPage from './pages/Login/LoginPage';
 import UserManagementPage from './pages/UserManagement/UserManagementPage';
@@ -20,51 +20,25 @@ const sidebarItems = [
 ];
 
 function App() {
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const savedUser = localStorage.getItem('agroMagUser');
-      if (!savedUser) return null;
-      const parsedUser = JSON.parse(savedUser);
-      if (parsedUser?.role) {
-        parsedUser.role = parsedUser.role.toUpperCase();
-      }
-      if (parsedUser?.token) {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${parsedUser.token}`;
-      }
-      return parsedUser;
-    } catch (error) {
-      console.warn('Usuario guardado en localStorage inválido:', error);
-      localStorage.removeItem('agroMagUser');
-      return null;
-    }
-  });
-
-  const defaultView = currentUser?.role === 'OPERARIO'
-    ? 'operaciones'
-    : currentUser?.role === 'ADMIN'
-      ? 'usuarios'
-      : 'finca';
-
-  const [view, setView] = useState(defaultView || 'finca');
+  const { currentUser, login, logout } = useAuth();
+  const [view, setView] = useState('finca');
   const [showLogin, setShowLogin] = useState(false);
 
-  const setAuthToken = (token) => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-      delete axios.defaults.headers.common['Authorization'];
+  // Ajustar la vista por defecto basada en el rol del usuario cuando éste inicia sesión
+  useEffect(() => {
+    if (currentUser) {
+      const defaultView = currentUser.role === 'OPERARIO'
+        ? 'operaciones'
+        : currentUser.role === 'ADMIN'
+          ? 'usuarios'
+          : 'finca';
+      setView(defaultView);
     }
-  };
+  }, [currentUser]);
 
   const handleLoginSuccess = (user) => {
-    const normalizedUser = {
-      ...user,
-      role: user?.role ? user.role.toUpperCase() : 'OPERARIO',
-    };
-    setCurrentUser(normalizedUser);
-    localStorage.setItem('agroMagUser', JSON.stringify(normalizedUser));
-    setAuthToken(normalizedUser.token);
-    setView(normalizedUser.role === 'OPERARIO' ? 'operaciones' : normalizedUser.role === 'ADMIN' ? 'usuarios' : 'finca');
+    login(user);
+    setShowLogin(false);
   };
 
   const handleStartLogin = () => {
@@ -72,11 +46,9 @@ function App() {
   };
 
   const handleLogout = () => {
-    setCurrentUser(null);
+    logout();
     setView('finca');
     setShowLogin(false);
-    localStorage.removeItem('agroMagUser');
-    setAuthToken(null);
   };
 
   if (!currentUser) {
@@ -116,7 +88,7 @@ function App() {
       case 'reportes':
         return <ReportsPage />;
       default:
-        return <div className="text-center py-12 text-slate-500">Selecciona una sección del menú.</div>;
+        return <div className="text-center py-12 text-haverts-primary/50 font-semibold">Selecciona una sección del menú.</div>;
     }
   };
 
