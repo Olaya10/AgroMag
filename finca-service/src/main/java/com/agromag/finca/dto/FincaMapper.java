@@ -38,8 +38,8 @@ public class FincaMapper {
         dto.setNombre(entity.getNombre());
         dto.setDescripcion(entity.getDescripcion());
         dto.setDiasCosecha(entity.getDiasCosecha());
-        dto.setTemperapturOptima(entity.getTemperapturOptima());
-        dto.setHumidadOptima(entity.getHumidadOptima());
+        dto.setTemperaturaOptima(entity.getTemperaturaOptima());
+        dto.setHumedadOptima(entity.getHumedadOptima());
         dto.setImagen(entity.getImagen());
         dto.setActivo(entity.getActivo());
         dto.setFechaCreacion(entity.getFechaCreacion());
@@ -54,8 +54,8 @@ public class FincaMapper {
         entity.setNombre(dto.getNombre());
         entity.setDescripcion(dto.getDescripcion());
         entity.setDiasCosecha(dto.getDiasCosecha());
-        entity.setTemperapturOptima(dto.getTemperapturOptima());
-        entity.setHumidadOptima(dto.getHumidadOptima());
+        entity.setTemperaturaOptima(dto.getTemperaturaOptima());
+        entity.setHumedadOptima(dto.getHumedadOptima());
         entity.setImagen(dto.getImagen());
         entity.setActivo(dto.getActivo());
         return entity;

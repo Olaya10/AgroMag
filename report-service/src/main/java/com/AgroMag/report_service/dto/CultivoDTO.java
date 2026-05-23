@@ -10,7 +10,23 @@ public class CultivoDTO {
     private String nombre;
     private String descripcion;
     private Integer diasCosecha;
-    private Double temperapturOptima;
-    private Double humidadOptima;
+    private String temperaturaOptima;
+    private String humedadOptima;
+
+    public String getTemperaturaOptima() {
+        return temperaturaOptima;
+    }
+
+    public void setTemperaturaOptima(String temperaturaOptima) {
+        this.temperaturaOptima = temperaturaOptima;
+    }
+
+    public String getHumedadOptima() {
+        return humedadOptima;
+    }
+
+    public void setHumedadOptima(String humedadOptima) {
+        this.humedadOptima = humedadOptima;
+    }
     private Boolean activo;
 }

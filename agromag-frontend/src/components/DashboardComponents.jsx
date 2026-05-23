@@ -1,29 +1,21 @@
-/**
- * DashboardComponents.jsx
- * Componentes del shell del dashboard: sidebar, layout, card.
- *
- * CAMBIOS CLAVE:
- * - Sidebar: animación width → translateX (elimina reflow en cada frame)
- * - isMobile elevado al DashboardLayout para evitar estado duplicado
- * - DashboardCard: whileInView → animate simple (elimina IntersectionObservers extra)
- * - will-change: transform en elementos animados continuamente
- */
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LogOut, Menu, X, Users, Leaf, Package,
-  Zap, BarChart3, ChevronRight, Sparkles
+  Zap, BarChart3, ChevronRight, Sparkles,
 } from 'lucide-react';
-import React from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 
 const SIDEBAR_W = 288; // px — debe coincidir con w-72 (18rem = 288px)
 
 const ICON_MAP = {
-  usuarios:    Users,
-  finca:       Leaf,
-  insumos:     Package,
+  home: BarChart3,
+  usuarios: Users,
+  finca: Leaf,
+  insumos: Package,
   operaciones: Zap,
-  reportes:    BarChart3,
-  novedades:   Sparkles,
+  reportes: BarChart3,
+  novedades: Sparkles,
 };
 
 /* ─── Sidebar ──────────────────────────────────────────────────────────── */
@@ -41,7 +33,6 @@ export const DashboardSidebar = ({
 
   return (
     <>
-      {/* ── Aside: siempre fixed, anima solo con translateX (0 reflow) ── */}
       <motion.aside
         initial={false}
         animate={{ x: isOpen ? 0 : -SIDEBAR_W }}
@@ -51,7 +42,6 @@ export const DashboardSidebar = ({
                    bg-haverts-base border-r border-haverts-secondary/20
                    shadow-medium flex flex-col z-50 overflow-hidden"
       >
-        {/* Header */}
         <div className="p-6 border-b border-haverts-secondary/10">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -73,7 +63,6 @@ export const DashboardSidebar = ({
             </button>
           </div>
 
-          {/* User info */}
           {user && (
             <div className="bg-haverts-secondary/10 rounded-2xl p-4
                             border border-haverts-secondary/20">
@@ -94,7 +83,6 @@ export const DashboardSidebar = ({
           )}
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {items.map((item, i) => {
             const Icon = ICON_MAP[item.key] || Leaf;
@@ -114,11 +102,10 @@ export const DashboardSidebar = ({
                 className={`w-full flex items-center gap-3 px-4 py-3
                             rounded-xl transition-all duration-200 relative overflow-hidden
                             ${isActive
-                              ? 'text-haverts-base shadow-soft'
-                              : 'text-haverts-primary/70 hover:bg-haverts-secondary/10 hover:text-haverts-primary'
-                            }`}
+                    ? 'text-haverts-base shadow-soft'
+                    : 'text-haverts-primary/70 hover:bg-haverts-secondary/10 hover:text-haverts-primary'
+                  }`}
               >
-                {/* Fondo activo animado con layoutId — spring suave */}
                 {isActive && (
                   <motion.div
                     layoutId="sidebarActive"
@@ -128,9 +115,8 @@ export const DashboardSidebar = ({
                     style={{ zIndex: -1 }}
                   />
                 )}
-                <Icon className={`w-5 h-5 flex-shrink-0 ${
-                  isActive ? 'text-haverts-base' : 'text-haverts-primary/60'
-                }`} />
+                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-haverts-base' : 'text-haverts-primary/60'
+                  }`} />
                 <span className="flex-1 text-left font-bold text-sm whitespace-nowrap">
                   {item.label}
                 </span>
@@ -142,7 +128,6 @@ export const DashboardSidebar = ({
           })}
         </nav>
 
-        {/* Logout */}
         <div className="p-4 border-t border-haverts-secondary/10">
           <button
             onClick={onLogout}
@@ -156,7 +141,6 @@ export const DashboardSidebar = ({
         </div>
       </motion.aside>
 
-      {/* Overlay mobile */}
       <AnimatePresence>
         {isMobile && isOpen && (
           <motion.div
@@ -171,7 +155,6 @@ export const DashboardSidebar = ({
         )}
       </AnimatePresence>
 
-      {/* Toggle button — CSS transition, no JS animation */}
       <button
         onClick={() => onToggle(!isOpen)}
         style={{
@@ -200,19 +183,102 @@ export const DashboardLayout = ({
   title,
   subtitle,
   headerAction,
+  data = [],
+  fetchData,
 }) => {
-  const [sidebarOpen, setSidebarOpen] = React.useState(
-    () => window.innerWidth >= 1024
-  );
-  const [isMobile, setIsMobile] = React.useState(
-    () => window.innerWidth < 1024
-  );
+  // ⇢ RF48 – filtro global por rango de fechas
+  const [fechaInicio, setFechaInicio] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d.toISOString().split('T')[0];
+  });
+  const [fechaFin, setFechaFin] = useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
 
-  React.useEffect(() => {
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
+
+  // ⇢ RF44 – KPI Volumen de agua
+  const aguaKPI = useMemo(() => {
+    const start = new Date(fechaInicio);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(fechaFin);
+    end.setHours(23, 59, 59, 999);
+    
+    return data
+      .filter(item => {
+        if (!item.fecha) return false;
+        // Parsear fecha - puede ser "YYYY-MM-DD" o "YYYY-MM-DDTHH:mm:ss"
+        const fechaParts = item.fecha.split('T')[0];
+        const f = new Date(fechaParts);
+        f.setHours(12, 0, 0, 0); // Establecer a mediodía para evitar problemas de zona horaria
+        return f >= start && f <= end;
+      })
+      .reduce((acc, cur) => acc + (cur.volumenAgua || 0), 0);
+  }, [data, fechaInicio, fechaFin]);
+
+  // ⇢ RF45 – Top 3 insumos
+  const topInsumos = useMemo(() => {
+  const start = new Date(fechaInicio);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(fechaFin);
+  end.setHours(23, 59, 59, 999);
+  
+  // Filter by date and ensure the item contains an insumo
+  const datofiltrados = data.filter(item => {
+    if (!item.fecha) return false;
+    const fechaParts = item.fecha.split('T')[0];
+    const f = new Date(fechaParts);
+    f.setHours(12, 0, 0, 0);
+    return f >= start && f <= end && item.insumo?.nombre;
+  });
+  
+  // Aggregate quantities per insumo name
+  const grouped = datofiltrados.reduce((map, cur) => {
+    const key = cur.insumo?.nombre || 'Desconocido';
+    map[key] = (map[key] || 0) + (cur.cantidad || 0);
+    return map;
+  }, {});
+  
+  // Return top 3 insumos
+  return Object.entries(grouped)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([nombre, total]) => ({ nombre, total }));
+}, [data, fechaInicio, fechaFin]);
+
+  // ⇢ RF46 – Datos gráfico dona
+  const insumoChartData = useMemo(() => {
+    const start = new Date(fechaInicio);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(fechaFin);
+    end.setHours(23, 59, 59, 999);
+    
+    const datofiltrados = data.filter(item => {
+      if (!item.fecha) return false;
+      const fechaParts = item.fecha.split('T')[0];
+      const f = new Date(fechaParts);
+      f.setHours(12, 0, 0, 0);
+      // Añadimos && item.insumo para que solo pasen las aplicaciones
+      return f >= start && f <= end && item.insumo;
+    });
+    
+    const catMap = datofiltrados.reduce((map, cur) => {
+      const cat = cur.insumo?.categoria || 'Sin categoría';
+      map[cat] = (map[cat] || 0) + (cur.cantidad || 0);
+      return map;
+    }, {});
+    return Object.entries(catMap).map(([categoria, total]) => ({
+      categoria,
+      total,
+    }));
+  }, [data, fechaInicio, fechaFin]);
+
+  useEffect(() => {
     const onResize = () => {
       const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
-      // En escritorio siempre expandido al hacer resize a lg+
       if (!mobile) setSidebarOpen(true);
     };
     window.addEventListener('resize', onResize);
@@ -232,7 +298,6 @@ export const DashboardLayout = ({
         onToggle={setSidebarOpen}
       />
 
-      {/* Main: ajuste de margen izquierdo con CSS transition (no JS) */}
       <main
         className="flex-1 flex flex-col min-w-0 overflow-hidden relative"
         style={{
@@ -240,33 +305,57 @@ export const DashboardLayout = ({
           transition: 'margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
-        {/* Page title bar */}
         {(title || subtitle || headerAction) && (
           <div className="bg-haverts-base/60 backdrop-blur-md
                           border-b border-haverts-secondary/10
-                          px-6 py-5 lg:py-6">
+                          px-6 py-5 lg:py-6"
+          >
             <div className="flex flex-col sm:flex-row sm:items-center
                             justify-between gap-4 max-w-7xl mx-auto pl-10 lg:pl-0">
               <div>
                 {title && (
                   <h2 className="text-xl lg:text-2xl font-display font-bold
-                                 text-haverts-primary tracking-tight">
+                               text-haverts-primary tracking-tight">
                     {title}
                   </h2>
                 )}
                 {subtitle && (
                   <p className="text-haverts-primary/50 mt-0.5 text-xs
-                                font-bold uppercase tracking-wider">
+                               font-bold uppercase tracking-wider">
                     {subtitle}
                   </p>
                 )}
               </div>
+              {/* Controles solo visibles en inicio / reportes */}
+              {activeItem === 'home' && (
+                <div className="flex items-center gap-4 mt-2 sm:mt-0">
+                  <input
+                    type="date"
+                    value={fechaInicio}
+                    onChange={e => setFechaInicio(e.target.value)}
+                    className="rounded-md border border-haverts-secondary/30 p-1 bg-white text-sm"
+                    aria-label="Fecha inicio"
+                  />
+                  <input
+                    type="date"
+                    value={fechaFin}
+                    onChange={e => setFechaFin(e.target.value)}
+                    className="rounded-md border border-haverts-secondary/30 p-1 bg-white text-sm"
+                    aria-label="Fecha fin"
+                  />
+                  <button
+                    onClick={fetchData}
+                    className="px-4 py-1.5 bg-haverts-primary text-white text-sm font-bold rounded-md hover:bg-haverts-primary/80 transition-colors"
+                  >
+                    Refrescar
+                  </button>
+                </div>
+              )}
               {headerAction && <div>{headerAction}</div>}
             </div>
           </div>
         )}
 
-        {/* Content */}
         <motion.div
           key={activeItem}
           initial={{ opacity: 0, y: 8 }}
@@ -275,6 +364,55 @@ export const DashboardLayout = ({
           className="flex-1 overflow-auto p-4 lg:p-8"
         >
           <div className="max-w-7xl mx-auto w-full">
+
+            {/* AQUI MOSTRAR LOS KPIs (Solo si estamos en la vista 'home') */}
+            {activeItem === 'home' && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            {/* KPI Agua */}
+                <DashboardCard title="Volumen de Agua (L)" subtitle={`Del ${fechaInicio} al ${fechaFin}`}>
+                  <div className="mt-4">
+                    <p className="text-4xl font-bold text-haverts-primary">{aguaKPI.toLocaleString()}</p>
+                  </div>
+                </DashboardCard>
+
+                {/* KPI Insumos */}
+                <DashboardCard title="Top 3 Insumos" subtitle="Cantidad usada">
+                  <ul className="space-y-3 mt-4">
+                    {topInsumos.map(item => (
+                      <li key={item.nombre} className="flex justify-between items-center border-b border-haverts-secondary/10 pb-2">
+                        <span className="font-medium text-haverts-primary">{item.nombre}</span>
+                        <span className="font-bold text-sm bg-haverts-secondary/20 px-2 py-0.5 rounded">{item.total}</span>
+                      </li>
+                    ))}
+                    {topInsumos.length === 0 && <p className="text-sm text-haverts-primary/50 text-center py-4">Sin datos en esta fecha.</p>}
+                  </ul>
+                </DashboardCard>
+
+                {/* Gráfico de dona */}
+                <DashboardCard title="Insumos por Categoría">
+                  <div className="flex justify-center -mt-4">
+                    <PieChart width={220} height={220}>
+                      <Pie
+                        data={insumoChartData}
+                        dataKey="total"
+                        nameKey="categoria"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={75}
+                        innerRadius={50}
+                        fill="#8884d8"
+                      >
+                        {insumoChartData.map((_, idx) => (
+                          <Cell key={`cell-${idx}`} fill={['#3B755E', '#85B48A', '#D8D174', '#C4A54A'][idx % 4]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </div>
+                </DashboardCard>
+              </div>
+            )}
+
             {children}
           </div>
         </motion.div>
@@ -284,10 +422,6 @@ export const DashboardLayout = ({
 };
 
 /* ─── DashboardCard ────────────────────────────────────────────────────── */
-/**
- * Card de sección — usa animate simple (no whileInView) para evitar
- * múltiples IntersectionObservers activos simultáneamente.
- */
 export const DashboardCard = ({
   title,
   subtitle,
@@ -305,7 +439,7 @@ export const DashboardCard = ({
                 p-6 sm:p-8 ${className}`}
   >
     {(title || subtitle || action) && (
-      <div className="flex items-start justify-between mb-7">
+      <div className="flex items-start justify-between mb-2">
         <div>
           {title && (
             <h3 className="text-xl font-bold text-haverts-primary

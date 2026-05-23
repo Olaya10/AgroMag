@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../../api';
 import { motion as Motion } from 'framer-motion';
 import { DashboardCard } from '../../components/DashboardComponents';
 import { PageHeader, toast, useConfirm, Spinner } from '../../components/UIComponents';
-import { Droplet, FlaskConical, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
+import { Droplet, FlaskConical, CheckCircle2, Pencil, Trash2, Copy, TrendingUp } from 'lucide-react';
 
 const OperationsPage = ({ currentUser }) => {
   const isOperario = currentUser?.role?.toUpperCase() === 'OPERARIO';
@@ -25,6 +25,10 @@ const OperationsPage = ({ currentUser }) => {
   const [filterAplicacionesFrom, setFilterAplicacionesFrom] = useState('');
   const [filterAplicacionesTo, setFilterAplicacionesTo] = useState('');
 
+  // ---- RF36 – Control de ordenamiento -----------------
+  const [sortDescRiegos, setSortDescRiegos] = useState(false);          // false = descendente (más nuevo primero)
+  const [sortDescAplicaciones, setSortDescAplicaciones] = useState(false);
+
   const [riegoData, setRiegoData] = useState({ fincaId: '', loteId: '', cultivoId: '', cantidadAguaLitros: '', fechaHora: '', observaciones: '' });
   const [aplicacionData, setAplicacionData] = useState({ fincaId: '', loteId: '', insumoId: '', dosis: '', fecha: '' });
 
@@ -33,6 +37,39 @@ const OperationsPage = ({ currentUser }) => {
 
   const [editingAplicacionId, setEditingAplicacionId] = useState(null);
   const [editingAplicacionData, setEditingAplicacionData] = useState({ loteId: '', insumoId: '', dosis: '', fecha: '' });
+
+  // ---- RF35 – Funciones de clonación --------------------
+  const cloneRiego = (riego) => {
+    // Copia los datos del riego al formulario de registro
+    setRiegoData({
+      fincaId: riego.lote?.finca?.id || '',
+      loteId: riego.lote?.id || '',
+      cultivoId: riego.cultivo?.id || '',
+      cantidadAguaLitros: riego.cantidadAguaLitros || '',
+      fechaHora: riego.fechaHora ? new Date(riego.fechaHora).toISOString().slice(0, 16) : '',
+      observaciones: riego.observaciones || '',
+    });
+  };
+
+  const cloneAplicacion = (app) => {
+    setAplicacionData({
+      fincaId: app.lote?.finca?.id || '',
+      loteId: app.loteId || '',
+      insumoId: app.insumo?.id || '',
+      dosis: app.dosis || '',
+      fecha: app.fecha ? new Date(app.fecha).toISOString().slice(0, 16) : '',
+    });
+  };
+
+  const resetRiegosFilters = () => {
+    setFilterRiegosFrom('');
+    setFilterRiegosTo('');
+  };
+
+  const resetAplicacionesFilters = () => {
+    setFilterAplicacionesFrom('');
+    setFilterAplicacionesTo('');
+  };
 
   const loadAllData = async () => {
     try {
@@ -111,7 +148,7 @@ const OperationsPage = ({ currentUser }) => {
     try {
       await api.post('/riegos', {
         fechaHora: riegoData.fechaHora || new Date().toISOString().slice(0, 19),
-        amount: Number(riegoData.cantidadAguaLitros), // Wait, does the API expect cantidadAguaLitros or amount? Let's check from original code line 117 it was cantidadAguaLitros
+        amount: Number(riegoData.cantidadAguaLitros),
         cantidadAguaLitros: Number(riegoData.cantidadAguaLitros),
         observaciones: riegoData.observaciones,
         lote: { id: Number(riegoData.loteId) },
@@ -128,6 +165,7 @@ const OperationsPage = ({ currentUser }) => {
     }
   };
 
+  // Función declarada ANTES de usarla en los filtros
   const matchesDateRange = (dateValue, from, to) => {
     if (!dateValue) return true;
     const itemDate = new Date(dateValue);
@@ -140,18 +178,68 @@ const OperationsPage = ({ currentUser }) => {
     return true;
   };
 
-  const resetRiegosFilters = () => {
-    setFilterRiegosFrom('');
-    setFilterRiegosTo('');
-  };
-
-  const resetAplicacionesFilters = () => {
-    setFilterAplicacionesFrom('');
-    setFilterAplicacionesTo('');
-  };
-
   const filteredRiegos = riegos.filter((riego) => matchesDateRange(riego.fechaHora, filterRiegosFrom, filterRiegosTo));
   const filteredAplicaciones = aplicaciones.filter((app) => matchesDateRange(app.fecha, filterAplicacionesFrom, filterAplicacionesTo));
+
+  // ---- RF36 – Listas memoizadas con ordenamiento ----
+  const sortedRiegos = useMemo(() => {
+    const list = [...filteredRiegos];
+    return sortDescRiegos ? list : list.slice().reverse();   // invertimos solo en la UI
+  }, [filteredRiegos, sortDescRiegos]);
+
+  const sortedAplicaciones = useMemo(() => {
+    const list = [...filteredAplicaciones];
+    return sortDescAplicaciones ? list : list.slice().reverse();
+  }, [filteredAplicaciones, sortDescAplicaciones]);
+
+  // ------------------------------------------------------------
+  // RF44 – Volumen total de agua de los últimos 30 días
+  // ------------------------------------------------------------
+  const waterVolume30d = useMemo(() => {
+    if (!Array.isArray(riegos) || riegos.length === 0) return 0;
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(now.getDate() - 30);
+
+    // Sumamos sólo los riegos cuyo campo `fecha` o `fechaHora` está dentro del rango
+    return riegos.reduce((total, r) => {
+      const fecha = new Date(r.fecha ?? r.fechaHora ?? 0);
+      if (fecha >= thirtyDaysAgo && fecha <= now) {
+        // `cantidadAguaLitros` o fallback a `cantidad`
+        const litros = Number(r.cantidadAguaLitros ?? r.cantidad ?? 0);
+        return total + litros;
+      }
+      return total;
+    }, 0);
+  }, [riegos]);
+
+  // ------------------------------------------------------------
+  // RF45 – Top 3 insumos (por dosis total)
+  // ------------------------------------------------------------
+  const top3Insumos = useMemo(() => {
+    if (!Array.isArray(aplicaciones) || aplicaciones.length === 0) return [];
+
+    // 1️⃣ Agrupamos por nombre del insumo
+    const grouped = aplicaciones.reduce((acc, app) => {
+      const nombre = app.insumoNombre ?? app.insumo?.nombreComercial ?? 'Sin nombre';
+      const dosis = Number(app.dosis ?? 0);
+      if (!acc[nombre]) acc[nombre] = 0;
+      acc[nombre] += dosis;
+      return acc;
+    }, {}); // <-- Le quitamos el `as Record...` para que no dé error en JSX
+
+    // 2️⃣ Convertimos a array → [{nombre, totalDosis}]
+    const array = Object.entries(grouped).map(([nombre, total]) => ({
+      nombre,
+      total,
+    }));
+
+    // 3️⃣ Ordenamos de mayor a menor y tomamos los 3 primeros
+    return array
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 3);
+  }, [aplicaciones]);
 
   const handleAplicacionSubmit = async (e) => {
     e.preventDefault();
@@ -307,6 +395,30 @@ const OperationsPage = ({ currentUser }) => {
           </div>
         }
       />
+
+      {/* ==== KPIs (RF44, RF45) agregados de forma visual ==== */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="rounded-2xl bg-white border border-haverts-secondary/20 p-5 flex items-center justify-between shadow-sm">
+          <div>
+            <p className="text-xs font-bold text-haverts-primary/60 uppercase tracking-wider mb-1">Volumen de agua (30 días)</p>
+            <p className="text-3xl font-bold text-haverts-primary">{waterVolume30d.toFixed(1)} <span className="text-sm font-medium">Litros</span></p>
+          </div>
+          <TrendingUp className="h-10 w-10 text-haverts-primary/20" />
+        </div>
+        <div className="rounded-2xl bg-white border border-haverts-secondary/20 p-5 shadow-sm">
+          <p className="text-xs font-bold text-haverts-primary/60 uppercase tracking-wider mb-3">Top 3 Insumos Más Usados</p>
+          <div className="space-y-2">
+            {top3Insumos.length > 0 ? top3Insumos.map((item, index) => (
+              <div key={item.nombre} className="flex justify-between items-center text-sm">
+                <span className="font-medium text-haverts-primary/80 truncate pr-4">
+                  <span className="text-haverts-primary/40 mr-2">{index + 1}.</span>{item.nombre}
+                </span>
+                <span className="font-bold text-haverts-primary">{item.total} <span className="text-xs font-normal">dosis</span></span>
+              </div>
+            )) : <p className="text-xs text-haverts-primary/40">Sin datos registrados aún.</p>}
+          </div>
+        </div>
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
         {/* Registrar Riego */}
@@ -508,10 +620,17 @@ const OperationsPage = ({ currentUser }) => {
               >
                 Limpiar filtros
               </button>
+              <button
+                type="button"
+                onClick={() => setSortDescRiegos(!sortDescRiegos)}
+                className="btn-secondary py-2 text-xs ml-2"
+              >
+                {sortDescRiegos ? 'Orden ascendente' : 'Orden descendente'}
+              </button>
             </div>
           </div>
           <div className="space-y-3">
-            {filteredRiegos.slice(-5).reverse().map((riego) => (
+            {sortedRiegos.slice(0, 5).map((riego) => (
               <div key={riego.id} className="rounded-2xl border border-haverts-secondary/20 bg-white/40 p-4">
                 {!isOperario && editingRiegoId === riego.id ? (
                   <div className="space-y-3">
@@ -571,7 +690,7 @@ const OperationsPage = ({ currentUser }) => {
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="font-bold text-haverts-primary text-sm leading-snug">
-                          {riego.lote?.nombre || 'Lote no disponible'} 
+                          {riego.lote?.nombre || 'Lote no disponible'}
                           {riego.cultivo?.nombre ? ` - ${riego.cultivo.nombre}` : ''}
                         </p>
                         <p className="text-[11px] text-haverts-primary/50 font-semibold">{new Date(riego.fechaHora).toLocaleString()}</p>
@@ -582,6 +701,15 @@ const OperationsPage = ({ currentUser }) => {
                         </span>
                         {!isOperario && (
                           <div className="flex">
+                            {/* Botón Clonar */}
+                            <button
+                              type="button"
+                              onClick={() => cloneRiego(riego)}
+                              className="p-1.5 text-haverts-primary/40 hover:text-haverts-primary rounded-lg transition"
+                              title="Clonar"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
                             <button onClick={() => handleEditRiegoClick(riego)} className="p-1.5 text-haverts-primary/40 hover:text-haverts-primary rounded-lg transition" title="Editar">
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
@@ -597,7 +725,7 @@ const OperationsPage = ({ currentUser }) => {
                 )}
               </div>
             ))}
-            {filteredRiegos.length === 0 && <p className="text-xs text-haverts-primary/40 font-bold text-center py-6">No hay registros de riegos.</p>}
+            {sortedRiegos.length === 0 && <p className="text-xs text-haverts-primary/40 font-bold text-center py-6">No hay registros de riegos.</p>}
           </div>
         </DashboardCard>
 
@@ -632,6 +760,13 @@ const OperationsPage = ({ currentUser }) => {
               >
                 Limpiar filtros
               </button>
+              <button
+                type="button"
+                onClick={() => setSortDescAplicaciones(!sortDescAplicaciones)}
+                className="btn-secondary py-2 text-xs ml-2"
+              >
+                {sortDescAplicaciones ? 'Orden asc.' : 'Orden desc.'}
+              </button>
             </div>
           </div>
           <div className="space-y-3">
@@ -640,7 +775,7 @@ const OperationsPage = ({ currentUser }) => {
                 <span className="text-[11px] font-bold text-haverts-primary/70">Modo operario — solo lectura. Editar/eliminar requiere Productor o Administrador.</span>
               </div>
             )}
-            {filteredAplicaciones.slice(-5).reverse().map((app) => {
+            {sortedAplicaciones.slice(0, 5).map((app) => {
               const loteInfo = lotes.find((lote) => lote.id === app.loteId);
               return (
                 <div key={app.id} className="rounded-2xl border border-haverts-secondary/20 bg-white/40 p-4">
@@ -708,6 +843,15 @@ const OperationsPage = ({ currentUser }) => {
                           </span>
                           {!isOperario && (
                             <div className="flex">
+                              {/* Botón Clonar */}
+                              <button
+                                type="button"
+                                onClick={() => cloneAplicacion(app)}
+                                className="p-1.5 text-haverts-primary/40 hover:text-haverts-primary rounded-lg transition"
+                                title="Clonar"
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </button>
                               <button onClick={() => handleEditAplicacionClick(app)} className="p-1.5 text-haverts-primary/40 hover:text-haverts-primary rounded-lg transition" title="Editar">
                                 <Pencil className="h-3.5 w-3.5" />
                               </button>
@@ -724,7 +868,7 @@ const OperationsPage = ({ currentUser }) => {
                 </div>
               );
             })}
-            {filteredAplicaciones.length === 0 && <p className="text-xs text-haverts-primary/40 font-bold text-center py-6">No hay aplicaciones registradas.</p>}
+            {sortedAplicaciones.length === 0 && <p className="text-xs text-haverts-primary/40 font-bold text-center py-6">No hay aplicaciones registradas.</p>}
           </div>
         </DashboardCard>
 
@@ -748,6 +892,50 @@ const OperationsPage = ({ currentUser }) => {
           </div>
         </DashboardCard>
       </div>
+
+      {/* ==== RF38 – Vista Kanban de Lotes ==== */}
+      <DashboardCard title="Lotes por etapa" subtitle="Kanban: Siembra | Crecimiento | Cosecha">
+        <div className="grid md:grid-cols-3 gap-4">
+          {/* Columna Siembra */}
+          <div className="bg-white/60 rounded-xl p-4 border border-haverts-secondary/20 shadow-sm">
+            <h3 className="text-center font-bold text-haverts-primary mb-3">Siembra</h3>
+            {lotes
+              .filter(l => l.etapa === 'Siembra')
+              .map(lote => (
+                <div key={lote.id} className="mb-2 p-3 rounded-lg border border-haverts-secondary/30 bg-white shadow-sm">
+                  <p className="font-bold text-sm text-haverts-primary">{lote.nombre}</p>
+                  <p className="text-xs text-haverts-primary/60 mt-1">{lote.finca?.nombre}</p>
+                </div>
+              ))}
+          </div>
+
+          {/* Columna Crecimiento */}
+          <div className="bg-white/60 rounded-xl p-4 border border-haverts-secondary/20 shadow-sm">
+            <h3 className="text-center font-bold text-haverts-primary mb-3">Crecimiento</h3>
+            {lotes
+              .filter(l => l.etapa === 'Crecimiento')
+              .map(lote => (
+                <div key={lote.id} className="mb-2 p-3 rounded-lg border border-haverts-secondary/30 bg-white shadow-sm">
+                  <p className="font-bold text-sm text-haverts-primary">{lote.nombre}</p>
+                  <p className="text-xs text-haverts-primary/60 mt-1">{lote.finca?.nombre}</p>
+                </div>
+              ))}
+          </div>
+
+          {/* Columna Cosecha */}
+          <div className="bg-white/60 rounded-xl p-4 border border-haverts-secondary/20 shadow-sm">
+            <h3 className="text-center font-bold text-haverts-primary mb-3">Cosecha</h3>
+            {lotes
+              .filter(l => l.etapa === 'Cosecha')
+              .map(lote => (
+                <div key={lote.id} className="mb-2 p-3 rounded-lg border border-haverts-secondary/30 bg-white shadow-sm">
+                  <p className="font-bold text-sm text-haverts-primary">{lote.nombre}</p>
+                  <p className="text-xs text-haverts-primary/60 mt-1">{lote.finca?.nombre}</p>
+                </div>
+              ))}
+          </div>
+        </div>
+      </DashboardCard>
     </div>
   );
 };

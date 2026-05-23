@@ -20,8 +20,24 @@ public class Cultivo {
     private String nombre;
     private String descripcion;
     private Integer diasCosecha;
-    private String temperapturOptima;
-    private String humidadOptima;
+    private String temperaturaOptima;
+    private String humedadOptima;
+
+    public String getTemperaturaOptima() {
+        return temperaturaOptima;
+    }
+
+    public void setTemperaturaOptima(String temperaturaOptima) {
+        this.temperaturaOptima = temperaturaOptima;
+    }
+
+    public String getHumedadOptima() {
+        return humedadOptima;
+    }
+
+    public void setHumedadOptima(String humedadOptima) {
+        this.humedadOptima = humedadOptima;
+    }
     
     
     @Column(columnDefinition = "TEXT")

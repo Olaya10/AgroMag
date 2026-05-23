@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../../api';
 import { DashboardCard } from '../../components/DashboardComponents';
 import { PageHeader, Spinner, EmptyState, useConfirm, toast } from '../../components/UIComponents';
@@ -13,6 +13,7 @@ const InventoryPage = () => {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [filterCategory, setFilterCategory] = useState('TODOS');
   const { confirm, ConfirmModal } = useConfirm();
 
   const API_URL = '/inventory/bodega/insumos';
@@ -41,7 +42,11 @@ const InventoryPage = () => {
       );
     }
   }, [insumos.length]);
-
+  // ⇢ RF41 – filtro de inventario por categoría (memorizado)
+  const filteredInsumos = useMemo(() => {
+    if (filterCategory === 'TODOS') return insumos;
+    return insumos.filter(i => i.tipo === filterCategory);
+  }, [insumos, filterCategory]);
   const resetForm = () => {
     setEditingId(null);
     setFormData({
@@ -115,10 +120,15 @@ const InventoryPage = () => {
         title="Bodega y stock inteligente"
         description="Gestiona inventario con alertas visuales y controles claros."
         action={
-          <button onClick={fetchInsumos} className="btn-secondary gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Actualizar stock
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={fetchInsumos} className="btn-secondary gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Actualizar stock
+            </button>
+            <button onClick={() => setFilterCategory('TODOS')} className={`btn-secondary ${filterCategory === 'TODOS' ? 'bg-haverts-primary text-white' : ''}`}>Todos</button>
+            <button onClick={() => setFilterCategory('FERTILIZANTE')} className={`btn-secondary ${filterCategory === 'FERTILIZANTE' ? 'bg-haverts-primary text-white' : ''}`}>Fertilizantes</button>
+            <button onClick={() => setFilterCategory('PESTICIDA')} className={`btn-secondary ${filterCategory === 'PESTICIDA' ? 'bg-haverts-primary text-white' : ''}`}>Pesticidas</button>
+          </div>
         }
       />
 
@@ -226,7 +236,7 @@ const InventoryPage = () => {
 
       {/* Tabla */}
       <DashboardCard title="Lista de insumos" subtitle="Acciones rápidas para cada elemento">
-        {insumos.length === 0 ? (
+        {filteredInsumos.length === 0 ? (
           <EmptyState
             icon={Package}
             title="Bodega vacía"
@@ -246,7 +256,7 @@ const InventoryPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {insumos.map(insumo => {
+                {filteredInsumos.map(insumo => {
                   const critico = Number(insumo.stockActual) <= Number(insumo.umbralCritico);
                   return (
                     <tr key={insumo.id} className="table-row">
@@ -290,6 +300,7 @@ const InventoryPage = () => {
             </table>
           </div>
         )}
+
       </DashboardCard>
     </div>
   );

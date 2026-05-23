@@ -48,8 +48,8 @@ public class CultivoService {
         cultivo.setNombre(detalles.getNombre());
         cultivo.setDescripcion(detalles.getDescripcion());
         cultivo.setDiasCosecha(detalles.getDiasCosecha());
-        cultivo.setTemperapturOptima(detalles.getTemperapturOptima());
-        cultivo.setHumidadOptima(detalles.getHumidadOptima());
+        cultivo.setTemperaturaOptima(detalles.getTemperaturaOptima());
+        cultivo.setHumedadOptima(detalles.getHumedadOptima());
         
         if (detalles.getImagen() != null) {
             cultivo.setImagen(detalles.getImagen());
