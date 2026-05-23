@@ -46,8 +46,8 @@ export const DashboardSidebar = ({
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-haverts-primary
-                              flex items-center justify-center shadow-soft">
-                <span className="text-haverts-base font-bold">🌿</span>
+                              flex items-center justify-center shadow-soft text-haverts-base">
+                <Leaf className="w-5 h-5" />
               </div>
               <h1 className="font-display font-bold text-lg
                              text-haverts-primary tracking-tight">
@@ -74,7 +74,7 @@ export const DashboardSidebar = ({
                 {user.name || user.email}
               </p>
               <div className="flex items-center gap-1.5 mt-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-haverts-accent animate-pulse" />
+                <div className="w-1.5 h-1.5 rounded-full bg-haverts-secondary animate-pulse" />
                 <p className="text-[11px] text-haverts-primary/70 capitalize font-medium">
                   {user.role?.toLowerCase() || 'usuario'}
                 </p>
@@ -117,11 +117,11 @@ export const DashboardSidebar = ({
                 )}
                 <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-haverts-base' : 'text-haverts-primary/60'
                   }`} />
-                <span className="flex-1 text-left font-bold text-sm whitespace-nowrap">
+                <span className="flex-1 text-left font-bold text-sm whitespace-nowrap relative z-10">
                   {item.label}
                 </span>
                 {isActive && (
-                  <ChevronRight className="w-4 h-4 text-haverts-base/80" />
+                  <ChevronRight className="w-4 h-4 text-haverts-base/80 relative z-10" />
                 )}
               </motion.button>
             );
@@ -132,7 +132,7 @@ export const DashboardSidebar = ({
           <button
             onClick={onLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl
-                       text-haverts-primary/60 hover:text-red-600 hover:bg-red-50
+                       text-haverts-primary/60 hover:text-red-600 hover:bg-red-500/10
                        transition-all duration-200 font-bold text-sm"
           >
             <LogOut className="w-5 h-5" />
@@ -150,7 +150,7 @@ export const DashboardSidebar = ({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={closeSidebar}
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
           />
         )}
       </AnimatePresence>
@@ -209,10 +209,9 @@ export const DashboardLayout = ({
     return data
       .filter(item => {
         if (!item.fecha) return false;
-        // Parsear fecha - puede ser "YYYY-MM-DD" o "YYYY-MM-DDTHH:mm:ss"
         const fechaParts = item.fecha.split('T')[0];
         const f = new Date(fechaParts);
-        f.setHours(12, 0, 0, 0); // Establecer a mediodía para evitar problemas de zona horaria
+        f.setHours(12, 0, 0, 0); 
         return f >= start && f <= end;
       })
       .reduce((acc, cur) => acc + (cur.volumenAgua || 0), 0);
@@ -225,7 +224,6 @@ export const DashboardLayout = ({
   const end = new Date(fechaFin);
   end.setHours(23, 59, 59, 999);
   
-  // Filter by date and ensure the item contains an insumo
   const datofiltrados = data.filter(item => {
     if (!item.fecha) return false;
     const fechaParts = item.fecha.split('T')[0];
@@ -234,14 +232,12 @@ export const DashboardLayout = ({
     return f >= start && f <= end && item.insumo?.nombre;
   });
   
-  // Aggregate quantities per insumo name
   const grouped = datofiltrados.reduce((map, cur) => {
     const key = cur.insumo?.nombre || 'Desconocido';
     map[key] = (map[key] || 0) + (cur.cantidad || 0);
     return map;
   }, {});
   
-  // Return top 3 insumos
   return Object.entries(grouped)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
@@ -260,7 +256,6 @@ export const DashboardLayout = ({
       const fechaParts = item.fecha.split('T')[0];
       const f = new Date(fechaParts);
       f.setHours(12, 0, 0, 0);
-      // Añadimos && item.insumo para que solo pasen las aplicaciones
       return f >= start && f <= end && item.insumo;
     });
     
@@ -306,9 +301,9 @@ export const DashboardLayout = ({
         }}
       >
         {(title || subtitle || headerAction) && (
-          <div className="bg-haverts-base/60 backdrop-blur-md
+          <div className="bg-haverts-base/80 backdrop-blur-md
                           border-b border-haverts-secondary/10
-                          px-6 py-5 lg:py-6"
+                          px-6 py-5 lg:py-6 sticky top-0 z-20"
           >
             <div className="flex flex-col sm:flex-row sm:items-center
                             justify-between gap-4 max-w-7xl mx-auto pl-10 lg:pl-0">
@@ -326,26 +321,29 @@ export const DashboardLayout = ({
                   </p>
                 )}
               </div>
-              {/* Controles solo visibles en inicio / reportes */}
+              
               {activeItem === 'home' && (
-                <div className="flex items-center gap-4 mt-2 sm:mt-0">
-                  <input
-                    type="date"
-                    value={fechaInicio}
-                    onChange={e => setFechaInicio(e.target.value)}
-                    className="rounded-md border border-haverts-secondary/30 p-1 bg-white text-sm"
-                    aria-label="Fecha inicio"
-                  />
-                  <input
-                    type="date"
-                    value={fechaFin}
-                    onChange={e => setFechaFin(e.target.value)}
-                    className="rounded-md border border-haverts-secondary/30 p-1 bg-white text-sm"
-                    aria-label="Fecha fin"
-                  />
+                <div className="flex items-center gap-3 mt-2 sm:mt-0 flex-wrap">
+                  <div className="flex items-center bg-haverts-base border border-haverts-secondary/30 rounded-lg overflow-hidden p-1 shadow-sm">
+                    <input
+                      type="date"
+                      value={fechaInicio}
+                      onChange={e => setFechaInicio(e.target.value)}
+                      className="bg-transparent text-sm text-haverts-primary outline-none px-2 py-1"
+                      aria-label="Fecha inicio"
+                    />
+                    <span className="text-haverts-primary/30 mx-1">-</span>
+                    <input
+                      type="date"
+                      value={fechaFin}
+                      onChange={e => setFechaFin(e.target.value)}
+                      className="bg-transparent text-sm text-haverts-primary outline-none px-2 py-1"
+                      aria-label="Fecha fin"
+                    />
+                  </div>
                   <button
                     onClick={fetchData}
-                    className="px-4 py-1.5 bg-haverts-primary text-white text-sm font-bold rounded-md hover:bg-haverts-primary/80 transition-colors"
+                    className="px-4 py-2 bg-haverts-primary text-haverts-base text-sm font-bold rounded-lg hover:bg-haverts-primary/90 transition-colors shadow-soft"
                   >
                     Refrescar
                   </button>
@@ -365,52 +363,101 @@ export const DashboardLayout = ({
         >
           <div className="max-w-7xl mx-auto w-full">
 
-            {/* AQUI MOSTRAR LOS KPIs (Solo si estamos en la vista 'home') */}
             {activeItem === 'home' && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* KPI Agua */}
-                <DashboardCard title="Volumen de Agua (L)" subtitle={`Del ${fechaInicio} al ${fechaFin}`}>
-                  <div className="mt-4">
-                    <p className="text-4xl font-bold text-haverts-primary">{aguaKPI.toLocaleString()}</p>
-                  </div>
-                </DashboardCard>
+              <>
+                {/* ==== FILA SUPERIOR: GRÁFICOS Y KPIs ==== */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+                  <DashboardCard title="Volumen de Agua (L)" subtitle={`Del ${fechaInicio} al ${fechaFin}`}>
+                    <div className="mt-4 flex items-center h-full pb-8">
+                      <p className="text-5xl font-bold text-haverts-primary">{aguaKPI.toLocaleString()}</p>
+                    </div>
+                  </DashboardCard>
 
-                {/* KPI Insumos */}
-                <DashboardCard title="Top 3 Insumos" subtitle="Cantidad usada">
-                  <ul className="space-y-3 mt-4">
-                    {topInsumos.map(item => (
-                      <li key={item.nombre} className="flex justify-between items-center border-b border-haverts-secondary/10 pb-2">
-                        <span className="font-medium text-haverts-primary">{item.nombre}</span>
-                        <span className="font-bold text-sm bg-haverts-secondary/20 px-2 py-0.5 rounded">{item.total}</span>
-                      </li>
-                    ))}
-                    {topInsumos.length === 0 && <p className="text-sm text-haverts-primary/50 text-center py-4">Sin datos en esta fecha.</p>}
-                  </ul>
-                </DashboardCard>
+                  <DashboardCard title="Top 3 Insumos" subtitle="Cantidad usada">
+                    <ul className="space-y-4 mt-4">
+                      {topInsumos.map((item, index) => (
+                        <li key={item.nombre} className="flex justify-between items-center border-b border-haverts-secondary/10 pb-3">
+                          <span className="font-medium text-haverts-primary flex items-center gap-2">
+                            <span className="text-haverts-secondary/50 font-bold">{index + 1}.</span> 
+                            {item.nombre}
+                          </span>
+                          <span className="font-bold text-sm bg-haverts-secondary/20 text-haverts-secondary px-2.5 py-1 rounded-md">
+                            {item.total}
+                          </span>
+                        </li>
+                      ))}
+                      {topInsumos.length === 0 && <p className="text-sm text-haverts-primary/50 text-center py-8">Sin datos en esta fecha.</p>}
+                    </ul>
+                  </DashboardCard>
 
-                {/* Gráfico de dona */}
-                <DashboardCard title="Insumos por Categoría">
-                  <div className="flex justify-center -mt-4">
-                    <PieChart width={220} height={220}>
-                      <Pie
-                        data={insumoChartData}
-                        dataKey="total"
-                        nameKey="categoria"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={75}
-                        innerRadius={50}
-                        fill="#8884d8"
-                      >
-                        {insumoChartData.map((_, idx) => (
-                          <Cell key={`cell-${idx}`} fill={['#3B755E', '#85B48A', '#D8D174', '#C4A54A'][idx % 4]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
+                  <DashboardCard title="Insumos por Categoría">
+                    <div className="flex justify-center -mt-4 pb-4">
+                      <PieChart width={220} height={220}>
+                        <Pie
+                          data={insumoChartData}
+                          dataKey="total"
+                          nameKey="categoria"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={75}
+                          innerRadius={50}
+                          fill="#8884d8"
+                          stroke="none"
+                        >
+                          {insumoChartData.map((_, idx) => (
+                            <Cell key={`cell-${idx}`} fill={['#3B755E', '#85B48A', '#D8D174', '#C4A54A'][idx % 4]} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                           contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                           itemStyle={{ color: '#3B755E', fontWeight: 'bold' }}
+                        />
+                      </PieChart>
+                    </div>
+                  </DashboardCard>
+                </div>
+
+                {/* ==== FILA INFERIOR: ACCESOS RÁPIDOS ==== */}
+                <div className="pt-8 border-t border-haverts-secondary/20">
+                  <h3 className="text-xl font-bold text-haverts-primary mb-6 tracking-tight flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-haverts-secondary" />
+                    Módulos Principales
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {sidebarItems.filter(item => item.key !== 'home').map((item) => {
+                      const Icon = ICON_MAP[item.key] || ChevronRight;
+                      const descripciones = {
+                        usuarios: 'Administra roles y permisos del personal.',
+                        finca: 'Gestiona lotes y etapas del cultivo.',
+                        insumos: 'Supervisa el stock y alertas de bodega.',
+                        operaciones: 'Registra riegos y aplicaciones en campo.',
+                        novedades: 'Reporta plagas, daños o eventos imprevistos.',
+                        reportes: 'Genera y exporta análisis de rendimiento.'
+                      };
+
+                      return (
+                        <motion.button
+                          key={item.key}
+                          whileHover={{ y: -4 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => onSidebarItemClick(item.key)}
+                          className="flex flex-col items-start p-6 text-left card hover:border-haverts-secondary/50 group cursor-pointer"
+                        >
+                          <div className="p-3 bg-haverts-secondary/10 rounded-xl mb-4 
+                                          group-hover:bg-haverts-secondary group-hover:text-white 
+                                          transition-colors text-haverts-secondary">
+                            <Icon className="w-6 h-6" />
+                          </div>
+                          <h4 className="font-bold text-lg text-haverts-primary mb-1">{item.label}</h4>
+                          <p className="text-sm text-haverts-primary/60 leading-relaxed">
+                            {descripciones[item.key] || 'Accede a este módulo del sistema.'}
+                          </p>
+                        </motion.button>
+                      );
+                    })}
                   </div>
-                </DashboardCard>
-              </div>
+                </div>
+              </>
             )}
 
             {children}
@@ -433,23 +480,18 @@ export const DashboardCard = ({
     initial={{ opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-    className={`bg-white/50 backdrop-blur-sm rounded-3xl
-                border border-haverts-secondary/20 shadow-soft
-                hover:shadow-medium transition-shadow duration-300
-                p-6 sm:p-8 ${className}`}
+    className={`card p-6 sm:p-8 flex flex-col h-full ${className}`}
   >
     {(title || subtitle || action) && (
-      <div className="flex items-start justify-between mb-2">
+      <div className="flex items-start justify-between mb-4">
         <div>
           {title && (
-            <h3 className="text-xl font-bold text-haverts-primary
-                           mb-0.5 tracking-tight">
+            <h3 className="text-lg font-bold text-haverts-primary mb-1 tracking-tight">
               {title}
             </h3>
           )}
           {subtitle && (
-            <p className="text-[11px] text-haverts-primary/50
-                          font-bold uppercase tracking-[0.18em]">
+            <p className="text-[10px] text-haverts-primary/50 font-bold uppercase tracking-[0.15em]">
               {subtitle}
             </p>
           )}
@@ -457,6 +499,6 @@ export const DashboardCard = ({
         {action && <div>{action}</div>}
       </div>
     )}
-    <div>{children}</div>
+    <div className="flex-1">{children}</div>
   </motion.div>
 );

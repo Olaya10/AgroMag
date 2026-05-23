@@ -1,6 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  // 👇 Esta es la línea clave para el modo oscuro manual
   darkMode: 'class',
   content: [
     "./index.html",
@@ -10,20 +9,21 @@ export default {
     extend: {
       colors: {
         'haverts': {
-          'base': '#EFEFE3',      // Off-white/Cream (Light) | #0f1419 (Dark)
-          'primary': '#3B755E',   // Forest Green (Light) | #7dd3c0 (Dark)
-          'secondary': '#85B48A', // Soft Green (Light) | #52a98a (Dark)
-          'accent': '#D8D174',    // Lime/Gold (Light) | #ffd966 (Dark)
-          'contrast': '#C4A54A',  // Earth Gold (Light) | #ffb84d (Dark)
+          'base': 'rgb(var(--color-base) / <alpha-value>)',
+          'primary': 'rgb(var(--color-primary) / <alpha-value>)',
+          'secondary': 'rgb(var(--color-secondary) / <alpha-value>)',
+          'accent': 'rgb(var(--color-accent) / <alpha-value>)',
+          'contrast': 'rgb(var(--color-contrast) / <alpha-value>)',
         },
         'agro': {
-          'forest': '#3B755E',
-          'emerald': '#85B48A',
-          'light': '#EFEFE3',
-          'soft': '#85B48A',
-          'dark': '#3B755E',
+          'forest': 'rgb(var(--color-primary) / <alpha-value>)',
+          'emerald': 'rgb(var(--color-secondary) / <alpha-value>)',
+          'light': 'rgb(var(--color-base) / <alpha-value>)',
+          'soft': 'rgb(var(--color-secondary) / <alpha-value>)',
+          'dark': 'rgb(var(--color-primary) / <alpha-value>)',
         }
       },
+      // ... (Deja el resto de tu config igual: fontFamily, borderRadius, etc.)
       fontFamily: {
         sans: ['"Bricolage Grotesque"', 'Inter', 'system-ui', 'sans-serif'],
         display: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
